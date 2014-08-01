@@ -15,7 +15,9 @@ PYTHONPATH=.
 #
 # Note: for this to work you will need to import the test class into
 # the current namespace via "tests/__init__.py"
-TEST=geoutils.image.tests:TestImage
+TEST=geoutils.tests:TestStandard \
+	geoutils.tests:TestNITF \
+	geoutils.tests:TestMetadata
 
 sdist:
 	$(PY) setup.py sdist
@@ -35,10 +37,10 @@ uninstall:
 	$(RPM) -e python-geoutils
 
 install:
-	$(RPM) -ivh dist/python-geoutils-?.??-?.noarch.rpm
+	$(RPM) -ivh dist/python-geoutils-?.?.?-?.noarch.rpm
 
 upgrade:
-	$(RPM) -Uvh dist/python-geoutils-?.??-?.noarch.rpm
+	$(RPM) -Uvh dist/python-geoutils-?.?.?-?.noarch.rpm
 
 clean:
 	$(GIT) clean -xdf
