@@ -17,7 +17,7 @@ class TestNITF(unittest2.TestCase):
         cls._file = os.path.join('geoutils',
                                  'tests',
                                  'files',
-                                 '03-ALPSMB110862965-O1B1___B_rp.ntf')
+                                 'i_3001a.ntf')
 
     def test_init(self):
         """Initialise a geoutils.NITF object.

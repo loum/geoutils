@@ -1,15 +1,16 @@
-.. geoutils documentation master file, created by
-   sphinx-quickstart on Thu Jul 31 11:02:34 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. geoutils documentation master file
 
-Welcome to geoutils's documentation!
-====================================
+GeoUtils
+========
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
+   modules/standard.rst
+   modules/nitf.rst
+   modules/metadata.rst
 
 Indices and tables
 ==================

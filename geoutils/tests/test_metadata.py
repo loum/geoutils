@@ -17,7 +17,7 @@ class TestMetadata(unittest2.TestCase):
         cls._file = os.path.join('geoutils',
                                  'tests',
                                  'files',
-                                 '03-ALPSMB110862965-O1B1___B_rp.ntf')
+                                 'i_3001a.ntf')
 
     def test_init(self):
         """Initialise a :class:`geoutils.Metadata` object.
@@ -49,30 +49,35 @@ class TestMetadata(unittest2.TestCase):
 
         # X coord size.
         received = meta.x_coord_size
-        expected = 4928
+        expected = 1024
         msg = 'Extracted x-cord size error'
         self.assertEqual(received, expected, msg)
 
         # Y coord size.
         received = meta.y_coord_size
-        expected = 16000
+        expected = 1024
         msg = 'Extracted y-cord size error'
         self.assertEqual(received, expected, msg)
 
         # GEOGCS - Spatial Reference System
         received = meta.geogcs
-        expected = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9108"]],AUTHORITY["EPSG","4326"]]'
+        results_file = os.path.join('geoutils',
+                                    'tests',
+                                    'results',
+                                    'geogcs.txt')
+        results_fh = open(results_file)
+        expected = results_fh.readline().rstrip()
         msg = 'Extracted geogcs error'
         self.assertEqual(received, expected, msg)
 
         # GeoTransform.
         received = meta.geoxform
-        expected = [132.26734943904776,
-                    2.9542430597838272e-05,
-                    -6.198304060667497e-06,
-                    34.511402854353108,
-                    -5.6378684347034569e-06,
-                    -2.2293059982916727e-05]
+        expected = [84.999999864233729,
+                    2.7153252959988272e-07,
+                    0.0,
+                    32.983333469099598,
+                    0.0,
+                    -2.7153252959294383e-07]
         msg = 'GeoTransform error'
         self.assertListEqual(received, expected, msg)
 
