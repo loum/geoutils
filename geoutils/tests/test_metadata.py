@@ -40,11 +40,11 @@ class TestMetadata(unittest2.TestCase):
         msg = 'Driver error'
         self.assertIsInstance(received, gdal.Driver, msg)
 
-        # Files.
-        received = meta.files
-        expected = [self._file]
-        msg = 'Source file list error'
-        self.assertListEqual(received, expected, msg)
+        # File.
+        received = meta.file
+        expected = os.path.basename(self._file)
+        msg = 'Source file name error'
+        self.assertEqual(received, expected, msg)
 
         # X coord size.
         received = meta.x_coord_size

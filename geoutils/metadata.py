@@ -1,10 +1,12 @@
-# pylint: disable=R0903,C0111
+# pylint: disable=R0903,C0111,R0902
 """The :class:`geoutils.Metadata` class is a component of a
 :class:`geoutils.Standard`: each standard presents a metadata component
 and an image.
 
 """
 __all__ = ["Metadata"]
+
+import os
 
 from oct.utils.log import log
 
@@ -16,9 +18,8 @@ class Metadata(object):
         Based in the input file, Python GDAL will register the correct
         driver to access the dataset
 
-    .. files:: *files*
-        List if filename relative to the current working directory
-        that are undergoing processing
+    .. file:: *file*
+        Source file name that is undergoing processing
 
     .. attribute:: *bands*
         Number of raster bands contained within the dataset.
@@ -49,7 +50,7 @@ class Metadata(object):
 
     """
     _driver = None
-    _files = []
+    _file = None
     _x_coord_size = 0
     _y_coord_size = 0
     _geogcs = None
@@ -65,14 +66,12 @@ class Metadata(object):
         self._driver = value
 
     @property
-    def files(self):
-        return self._files
+    def file(self):
+        return self._file
 
-    @files.setter
-    def files(self, values):
-        del self._files[:]
-        self._files = []
-        self._files.extend(values)
+    @file.setter
+    def file(self, value):
+        self._file = value
 
     @property
     def x_coord_size(self):
@@ -117,6 +116,9 @@ class Metadata(object):
         self._metadata.clear()
         self._metadata = values
 
+    def __call__(self):
+        return {'file': self.file}
+
     def extract_meta(self, dataset):
         """Attempts to extract the metadata from the
         :attr:`geoutils.Standard.dataset` *dataset*
@@ -126,8 +128,8 @@ class Metadata(object):
             self.driver = dataset.GetDriver()
             log.debug('Driver: %s' % str(self.driver))
 
-            self.files = dataset.GetFileList()
-            log.debug('Files: %s' % str(self.files))
+            self.file = os.path.basename(dataset.GetFileList()[0])
+            log.debug('File: %s' % str(self.file))
 
             self.x_coord_size = dataset.RasterXSize
             log.debug('X-cord size: %d' % self.x_coord_size)

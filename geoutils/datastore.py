@@ -4,6 +4,8 @@
 """
 __all__ = ["Datastore"]
 
+import os
+
 import pyaccumulo
 from thrift.transport.TTransport import TTransportException
 from pyaccumulo.proxy.AccumuloProxy import AccumuloSecurityException
@@ -13,6 +15,13 @@ from oct.utils.log import log
 
 class Datastore(object):
     """:class:`geoutils.Metadata`
+
+    .. note::
+
+        The :meth:`geoutils.Datastore.ingest_metadata` method
+        hardwires schema information into the mutations.  This is
+        probably not a good idea.  Ideally, this should be abstracted
+        into a special schema module.
 
     .. attribute:: *connection*
         Handles the Accumulo connection state.  Upon successful
@@ -31,7 +40,7 @@ class Datastore(object):
         (default ``root``)
 
     .. attribute:: *password*
-        Password credential of the Accumulo proxy host conneciton
+        Password credential of the Accumulo proxy host connection
         (defaults to the empty string)
 
     .. attribute:: *image_table_name*
@@ -126,6 +135,10 @@ class Datastore(object):
 
     def init_table(self, name=None):
         """Initialise the datastore table.
+
+        **Kwargs:**
+            *name*: override the name of the image table to delete
+
         """
         if name is not None:
             self.image_table_name = name
@@ -150,6 +163,39 @@ class Datastore(object):
 
         return status
 
+    def delete_table(self, name=None):
+        """Remove an existing datastore table.
+
+        .. note::
+
+            Use with caution!
+
+        **Kwargs:**
+            *name*: override the name of the image table to delete
+
+        """
+        if name is not None:
+            self.image_table_name = name
+
+        status = False
+        log.info('Deleting the image library table: "%s" ...' %
+                 self.image_table_name)
+
+        if self.connection is not None:
+            if self.connection.table_exists(self.image_table_name):
+                self.connection.delete_table(self.image_table_name)
+                status = True
+            else:
+                log.error('Image table "%s" does not exist!' %
+                          self.image_table_name)
+        else:
+            log.error('Connection state not detected. Table not deleted')
+
+        log.info('Image library table "%s" deletion status: "%s"' %
+                 (self.image_table_name, status))
+
+        return status
+
     def close(self):
         """Attempt to close the :attr:`geoutils.Datastore.connection`
         state.
@@ -159,3 +205,54 @@ class Datastore(object):
             log.info('Closing datastore connection ...')
             self.connection.close()
             log.info('Datastore connection closed.')
+
+    def ingest_metadata(self, metadata):
+        """Ingest the metadata component into the datastore.
+
+        **Args:**
+            *metadata*: dictionary structure that represents the
+            metadata component to ingest
+
+        """
+        row_id = None
+
+        if self.connection is not None:
+            writer = self.connection.create_batch_writer(self.image_table_name)
+            row_id = metadata.get('file')
+            if row_id is None:
+                log.error('Unable to generate Row ID from source data')
+            else:
+                row_id = os.path.splitext(row_id)[0]
+                log.debug('row id: %s' % row_id)
+
+                mutation = pyaccumulo.Mutation(row_id)
+                mutation.put(cf='file', cq=metadata.get('file'))
+                mutation.put(cf='x_coord_size',
+                             cq=metadata.get('x_coord_size'))
+                mutation.put(cf='y_coord_size',
+                             cq=metadata.get('y_coord_size'))
+                mutation.put(cf='geogcs',
+                             cq=metadata.get('geogcs'))
+                mutation.put(cf='geoxform_top_left_x',
+                             cq=repr(metadata.get('geoxform')[0]))
+                mutation.put(cf='geoxform_we_pixel_res',
+                             cq=repr(metadata.get('geoxform')[1]))
+                mutation.put(cf='geoxform_we_rotation',
+                             cq=repr(metadata.get('geoxform')[2]))
+                mutation.put(cf='geoxform_top_left_y',
+                             cq=repr(metadata.get('geoxform')[3]))
+                mutation.put(cf='geoxform_ns_rotation',
+                             cq=repr(metadata.get('geoxform')[4]))
+                mutation.put(cf='geoxform_ns_pixel_res',
+                             cq=repr(metadata.get('geoxform')[5]))
+
+                # Metadata component.
+                meta_mut_row_id = '%s:metadata' % row_id
+                mutation.put(cf='metadata', cq=meta_mut_row_id)
+                writer.add_mutation(mutation)
+
+                meta_mut = pyaccumulo.Mutation(meta_mut_row_id)
+                for key, value in metadata.get('metadata').iteritems():
+                    meta_mut.put(cf=key, cq=value)
+                writer.add_mutation(meta_mut)
+            writer.close()

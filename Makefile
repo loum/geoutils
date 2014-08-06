@@ -18,7 +18,8 @@ PYTHONPATH=.
 TEST=geoutils.tests:TestStandard \
 	geoutils.tests:TestNITF \
 	geoutils.tests:TestMetadata \
-	geoutils.tests:TestDatastore
+	geoutils.tests:TestDatastore \
+	geoutils.tests:TestMockServer
 
 sdist:
 	$(PY) setup.py sdist
