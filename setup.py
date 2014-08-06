@@ -70,6 +70,6 @@ setup(name='python-geoutils',
       author='Lou Markovski',
       author_email='lou.markovski@tollgroup.com',
       url='https://nparcel.tollgroup.com',
-      packages=['geoutils.image'],
+      packages=['geoutils'],
       package_dir={'geoutils': 'geoutils'},
       data_files=FILES)

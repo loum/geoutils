@@ -42,9 +42,16 @@ class TestNITF(unittest2.TestCase):
         nitf = geoutils.NITF(source_filename=self._file)
         nitf.open()
         received = nitf.dataset
-        msg = 'Open against NITF file should set geoutils.NITFdataset attr'
+        msg = 'NITF open should set geoutils.Standard.dataset attribute'
         self.assertIsInstance(received, gdal.Dataset, msg)
         del nitf
+
+    def test_extract_nitf_meta(self):
+        """Extract NITF metadata.
+        """
+        nitf = geoutils.NITF(source_filename=self._file)
+        nitf.open()
+        nitf.metadata.extract_meta(nitf.dataset)
 
     @classmethod
     def tearDownClass(cls):

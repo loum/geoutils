@@ -17,7 +17,8 @@ PYTHONPATH=.
 # the current namespace via "tests/__init__.py"
 TEST=geoutils.tests:TestStandard \
 	geoutils.tests:TestNITF \
-	geoutils.tests:TestMetadata
+	geoutils.tests:TestMetadata \
+	geoutils.tests:TestDatastore
 
 sdist:
 	$(PY) setup.py sdist

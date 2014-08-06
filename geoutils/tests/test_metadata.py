@@ -33,8 +33,7 @@ class TestMetadata(unittest2.TestCase):
         nitf.open()
 
         meta = geoutils.Metadata()
-        meta.dataset = nitf.dataset
-        meta.extract_meta()
+        meta.extract_meta(dataset=nitf.dataset)
 
         # Driver.
         received = meta.driver

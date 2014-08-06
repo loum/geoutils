@@ -9,6 +9,7 @@ __all__ = ["Standard"]
 
 from osgeo import gdal
 
+import geoutils
 from oct.utils.log import log
 
 
@@ -20,6 +21,7 @@ class Standard(object):
     """
     _filename = None
     _dataset = None
+    _metadata = geoutils.Metadata()
 
     def __init__(self, source_filename=None):
         self._filename = source_filename
@@ -39,6 +41,14 @@ class Standard(object):
     @dataset.setter
     def dataset(self, value):
         self._dataset = value
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        self._metadata = value
 
     def open(self):
         """Attempts to open :attr:`filename` as a raster file as a

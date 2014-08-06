@@ -48,7 +48,6 @@ class Metadata(object):
         image data
 
     """
-    _dataset = None
     _driver = None
     _files = []
     _x_coord_size = 0
@@ -56,17 +55,6 @@ class Metadata(object):
     _geogcs = None
     _geoxform = []
     _metadata = {}
-
-    def __init__(self):
-        pass
-
-    @property
-    def dataset(self):
-        return self._dataset
-
-    @dataset.setter
-    def dataset(self, value):
-        self._dataset = value
 
     @property
     def driver(self):
@@ -129,31 +117,31 @@ class Metadata(object):
         self._metadata.clear()
         self._metadata = values
 
-    def extract_meta(self):
+    def extract_meta(self, dataset):
         """Attempts to extract the metadata from the
-        :attr:`geoutils.Standard.dataset` attribute
+        :attr:`geoutils.Standard.dataset` *dataset*
 
         """
-        if self.dataset is not None:
-            self.driver = self.dataset.GetDriver()
+        if dataset is not None:
+            self.driver = dataset.GetDriver()
             log.debug('Driver: %s' % str(self.driver))
 
-            self.files = self.dataset.GetFileList()
+            self.files = dataset.GetFileList()
             log.debug('Files: %s' % str(self.files))
 
-            self.x_coord_size = self.dataset.RasterXSize
+            self.x_coord_size = dataset.RasterXSize
             log.debug('X-cord size: %d' % self.x_coord_size)
 
-            self.y_coord_size = self.dataset.RasterYSize
+            self.y_coord_size = dataset.RasterYSize
             log.debug('Y-cord size: %d' % self.y_coord_size)
 
-            self.geogcs = self.dataset.GetProjection()
+            self.geogcs = dataset.GetProjection()
             log.debug('Spatial Reference System: %s' % self.geogcs)
 
-            self.geoxform = self.dataset.GetGeoTransform()
+            self.geoxform = dataset.GetGeoTransform()
             log.debug('GeoTransform: %s' % self.geoxform)
 
-            self.metadata = self.dataset.GetMetadata_Dict()
+            self.metadata = dataset.GetMetadata_Dict()
             log.debug('Metadata dict: %s' % self.metadata)
         else:
-            log.warn('Extraction failed: dataset stream not set')
+            log.warn('Extraction failed: dataset stream not provided')
