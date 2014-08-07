@@ -90,6 +90,39 @@ class TestDatastore(unittest2.TestCase):
 
         self._ds.ingest_metadata(i_3001a)
 
+        # Clean up.
+        self._ds.delete_table()
+
+    def test_query_metadata_no_data(self):
+        """Attempt to query the metadata component from an empty datastore.
+        """
+        self._ds.connect()
+        self._ds.init_table()
+
+        received = self._ds.query_metadata(key='i_3001a')
+        expected = 0
+        msg = 'Scan across empty table should return 0 cells'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table()
+
+    def test_query_metadata_with_data(self):
+        """Attempt to query the metadata component from the datastore.
+        """
+        from geoutils.tests.files.i_3001a_dict import i_3001a
+
+        self._ds.connect()
+        self._ds.init_table()
+
+        self._ds.ingest_metadata(i_3001a)
+
+        received = self._ds.query_metadata(key='i_3001a', display=False)
+        expected = 73
+        msg = 'Scan across table should return cells'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
         self._ds.delete_table()
 
     @classmethod

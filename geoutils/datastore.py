@@ -233,26 +233,48 @@ class Datastore(object):
                              cq=metadata.get('y_coord_size'))
                 mutation.put(cf='geogcs',
                              cq=metadata.get('geogcs'))
-                mutation.put(cf='geoxform_top_left_x',
-                             cq=repr(metadata.get('geoxform')[0]))
-                mutation.put(cf='geoxform_we_pixel_res',
-                             cq=repr(metadata.get('geoxform')[1]))
-                mutation.put(cf='geoxform_we_rotation',
-                             cq=repr(metadata.get('geoxform')[2]))
-                mutation.put(cf='geoxform_top_left_y',
-                             cq=repr(metadata.get('geoxform')[3]))
-                mutation.put(cf='geoxform_ns_rotation',
-                             cq=repr(metadata.get('geoxform')[4]))
-                mutation.put(cf='geoxform_ns_pixel_res',
-                             cq=repr(metadata.get('geoxform')[5]))
 
-                # Metadata component.
-                meta_mut_row_id = '%s:metadata' % row_id
-                mutation.put(cf='metadata', cq=meta_mut_row_id)
+                # geoxform
+                index = 0
+                for value in metadata.get('geoxform'):
+                    mutation.put(cf='geoxform=%d' % index, cq=repr(value))
+                    index += 1
+
+                # metadata
+                for key, value in metadata.get('metadata').iteritems():
+                    mutation.put(cf='metadata=%s' % key, cq=value)
+
                 writer.add_mutation(mutation)
 
-                meta_mut = pyaccumulo.Mutation(meta_mut_row_id)
-                for key, value in metadata.get('metadata').iteritems():
-                    meta_mut.put(cf=key, cq=value)
-                writer.add_mutation(meta_mut)
             writer.close()
+
+    def query_metadata(self, key, display=True):
+        """Query the metadata component from the datastore.
+
+        **Args:**
+            *key*: at this time, *key* relates to the NITF file name
+            (less the ``.ntf`` extension) that is used in the current
+            schema as the Row ID component of the row key.
+
+        **Kwargs:**
+            *display*: write the results to STDOUT (default ``True``)
+
+        **Returns:**
+            the metadata component of *key*
+
+        """
+        log.info('Querying datastore against key: "%s" ...' % key)
+
+        scan_range = pyaccumulo.Range(srow=key, erow=key)
+        results = self.connection.scan(table=self.image_table_name,
+                                       scanrange=scan_range,
+                                       cols=[])
+        results_count = 0
+        for cell in results:
+            results_count += 1
+            if display:
+                print(cell)
+
+        log.info('Query key "%s" complete' % key)
+
+        return results_count
