@@ -1,7 +1,7 @@
-# pylint: disable=R0903,C0111,R0902
+# pylint: disable=C0111,R0902
 """The :class:`geoutils.Metadata` class is a component of a
 :class:`geoutils.Standard`: each standard presents a metadata component
-and an image.
+and an image.  This class focuses on the metadata.
 
 """
 __all__ = ["Metadata"]
@@ -123,8 +123,20 @@ class Metadata(object):
         """Attempts to extract the metadata from the
         :attr:`geoutils.Standard.dataset` *dataset*
 
+        **Args:**
+            *dataset*: a :class:`gdal.Dataset` object generally
+            obtained via a :func:`gdal.Open` operation
+
+        **Returns:**
+             Boolean ``True`` if the image extraction was successful
+             Boolean ``False`` otherwise
+
         """
-        if dataset is not None:
+        status = False
+
+        if dataset is None:
+            log.warn('Extraction failed: dataset stream not provided')
+        else:
             self.driver = dataset.GetDriver()
             log.debug('Driver: %s' % str(self.driver))
 
@@ -145,5 +157,7 @@ class Metadata(object):
 
             self.metadata = dataset.GetMetadata_Dict()
             log.debug('Metadata dict: %s' % self.metadata)
-        else:
-            log.warn('Extraction failed: dataset stream not provided')
+
+            status = True
+
+        return status

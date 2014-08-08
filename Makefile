@@ -18,6 +18,7 @@ PYTHONPATH=.
 TEST=geoutils.tests:TestStandard \
 	geoutils.tests:TestNITF \
 	geoutils.tests:TestMetadata \
+	geoutils.tests:TestGeoImage \
 	geoutils.tests:TestDatastore \
 	geoutils.tests:TestMockServer
 

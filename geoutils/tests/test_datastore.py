@@ -80,21 +80,27 @@ class TestDatastore(unittest2.TestCase):
         msg = 'Table deletion (missing table) should return False'
         self.assertFalse(received, msg)
 
-    def test_ingest_metadata(self):
+    def test_ingest(self):
         """Attempt to ingest the metadata component into the datastore.
         """
         from geoutils.tests.files.i_3001a_dict import i_3001a
+        image_stream_file =  os.path.join('geoutils',
+                                          'tests',
+                                          'files',
+                                          'image_stream.out')
+        image_stream_fh = open(image_stream_file, 'rb')
 
         self._ds.connect()
         self._ds.init_table()
 
-        self._ds.ingest_metadata(i_3001a)
+        self._ds.ingest(i_3001a, image_stream_fh.read)
 
         # Clean up.
+        image_stream_fh.close()
         self._ds.delete_table()
 
     def test_query_metadata_no_data(self):
-        """Attempt to query the metadata component from an empty datastore.
+        """Query the metadata component from an empty datastore.
         """
         self._ds.connect()
         self._ds.init_table()
@@ -115,7 +121,7 @@ class TestDatastore(unittest2.TestCase):
         self._ds.connect()
         self._ds.init_table()
 
-        self._ds.ingest_metadata(i_3001a)
+        self._ds.ingest(i_3001a)
 
         received = self._ds.query_metadata(key='i_3001a', display=False)
         expected = 73

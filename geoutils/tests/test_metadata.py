@@ -19,12 +19,15 @@ class TestMetadata(unittest2.TestCase):
                                  'files',
                                  'i_3001a.ntf')
 
+    @classmethod
+    def setUp(cls):
+        cls._meta = geoutils.Metadata()
+
     def test_init(self):
-        """Initialise a :class:`geoutils.Metadata` object.
+        """Initialise a geoutils.Metadata object.
         """
-        nitf = geoutils.Metadata()
         msg = 'Object is not a geoutils.Metadata'
-        self.assertIsInstance(nitf, geoutils.Metadata, msg)
+        self.assertIsInstance(self._meta, geoutils.Metadata, msg)
 
     def test_extract_meta(self):
         """Verify the x_coord_size attribute.
@@ -32,34 +35,35 @@ class TestMetadata(unittest2.TestCase):
         nitf = geoutils.NITF(source_filename=self._file)
         nitf.open()
 
-        meta = geoutils.Metadata()
-        meta.extract_meta(dataset=nitf.dataset)
+        received = self._meta.extract_meta(dataset=nitf.dataset)
+        msg = 'Successful metadata extraction should return True'
+        self.assertTrue(received, msg)
 
         # Driver.
-        received = meta.driver
+        received = self._meta.driver
         msg = 'Driver error'
         self.assertIsInstance(received, gdal.Driver, msg)
 
         # File.
-        received = meta.file
+        received = self._meta.file
         expected = os.path.basename(self._file)
         msg = 'Source file name error'
         self.assertEqual(received, expected, msg)
 
         # X coord size.
-        received = meta.x_coord_size
+        received = self._meta.x_coord_size
         expected = 1024
         msg = 'Extracted x-cord size error'
         self.assertEqual(received, expected, msg)
 
         # Y coord size.
-        received = meta.y_coord_size
+        received = self._meta.y_coord_size
         expected = 1024
         msg = 'Extracted y-cord size error'
         self.assertEqual(received, expected, msg)
 
         # GEOGCS - Spatial Reference System
-        received = meta.geogcs
+        received = self._meta.geogcs
         results_file = os.path.join('geoutils',
                                     'tests',
                                     'results',
@@ -70,7 +74,7 @@ class TestMetadata(unittest2.TestCase):
         self.assertEqual(received, expected, msg)
 
         # GeoTransform.
-        received = meta.geoxform
+        received = self._meta.geoxform
         expected = [84.999999864233729,
                     2.7153252959988272e-07,
                     0.0,
@@ -80,9 +84,14 @@ class TestMetadata(unittest2.TestCase):
         msg = 'GeoTransform error'
         self.assertListEqual(received, expected, msg)
 
-        del meta
+        nitf = None
         del nitf
 
     @classmethod
-    def tearDownMethod(cls):
+    def tearDown(cls):
+        cls._nitf = None
+        del cls._nitf
+
+    @classmethod
+    def tearDownClass(cls):
         del cls._file

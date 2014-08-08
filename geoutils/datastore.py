@@ -106,6 +106,16 @@ class Datastore(object):
     def __del__(self):
         self.close()
 
+    def _create_writer(self):
+        writer = None
+
+        if self.connection is None:
+            log.error('Writer error: Accumulo connection not detected.')
+        else:
+            writer = self.connection.create_batch_writer(self.image_table_name)
+
+        return writer
+
     def connect(self):
         """Connect to the Accumulo datastore.
 
@@ -206,18 +216,26 @@ class Datastore(object):
             self.connection.close()
             log.info('Datastore connection closed.')
 
-    def ingest_metadata(self, metadata):
+    def ingest(self,
+               metadata,
+               image_stream=None,
+               thumb_image_stream=None):
         """Ingest the metadata component into the datastore.
 
         **Args:**
             *metadata*: dictionary structure that represents the
             metadata component to ingest
 
+            *image_stream*:
+            *thumb_image_stream*: referenct to a
+            :func:`osgeo.gdal.Dataset.GetRasterBand.ReadRaster` stream
+            typically provided by :meth:`geoutils.GeoImage.extract_image`
+
         """
         row_id = None
 
-        if self.connection is not None:
-            writer = self.connection.create_batch_writer(self.image_table_name)
+        writer = self._create_writer()
+        if writer is not None:
             row_id = metadata.get('file')
             if row_id is None:
                 log.error('Unable to generate Row ID from source data')
@@ -243,6 +261,13 @@ class Datastore(object):
                 # metadata
                 for key, value in metadata.get('metadata').iteritems():
                     mutation.put(cf='metadata=%s' % key, cq=value)
+
+                # Image.
+                if image_stream is not None:
+                    mutation.put(cf='image', val=image_stream())
+                # Image thumb.
+                if thumb_image_stream is not None:
+                    mutation.put(cf='image', val=thumb_image_stream())
 
                 writer.add_mutation(mutation)
 
