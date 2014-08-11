@@ -28,7 +28,7 @@ class GeoImage(object):
                            buf_xsize = None,
                            buf_ysize = None,
                            buf_type = None,
-                           band_list = None ):
+                           band_list = None):
 
         * The ``xoff``, ``yoff,`` ``xsize`` and ``ysize arguments define
           the rectangle on the raster file to read.

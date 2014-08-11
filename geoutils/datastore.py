@@ -264,10 +264,10 @@ class Datastore(object):
 
                 # Image.
                 if image_stream is not None:
-                    mutation.put(cf='image', val=image_stream())
+                    mutation.put(cf='image', val=image_stream)
                 # Image thumb.
                 if thumb_image_stream is not None:
-                    mutation.put(cf='image', val=thumb_image_stream())
+                    mutation.put(cf='thumb', val=thumb_image_stream)
 
                 writer.add_mutation(mutation)
 
@@ -288,7 +288,8 @@ class Datastore(object):
             the metadata component of *key*
 
         """
-        log.info('Querying datastore against key: "%s" ...' % key)
+        log.info('Querying datastore table "%s" against key: "%s" ...' %
+                 (self.image_table_name, key))
 
         scan_range = pyaccumulo.Range(srow=key, erow=key)
         results = self.connection.scan(table=self.image_table_name,

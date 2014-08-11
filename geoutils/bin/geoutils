@@ -1,0 +1,56 @@
+#!/usr/bin/python
+"""Stub out the geoutils script.
+
+Initial iteration provides a simple ingest and query interface to
+an accumulo instance.
+
+"""
+import sys
+import argparse
+from pyaccumulo import Accumulo, Mutation, Range
+
+import geoutils
+from oct.utils.log import log
+
+try:
+    import settings
+except ImportError as err:
+    log.fatal('Please define your settings.py file')
+    sys.exit(1)
+
+def main():
+    """GeoUtils main call.
+
+    """
+    parser = argparse.ArgumentParser('GeoUtils command line interface')
+    parser.add_argument('action', help='ingest or query')
+    parser.add_argument('-f', '--file', help='file to ingest')
+    parser.add_argument('-k', '--key', help='key to search')
+    args = parser.parse_args()
+
+    datastore = geoutils.Datastore()
+    datastore.host = settings.HOST
+    datastore.port = settings.PORT
+    datastore.user = settings.USER
+    datastore.password = settings.PASSWORD
+    datastore.connect()
+
+    
+    datastore.image_table_name = settings.TABLE
+    if args.action == 'ingest':
+        datastore.delete_table()
+        datastore.init_table()
+
+        if args.file is not None:
+            nitf = geoutils.NITF(source_filename=args.file)
+            nitf.open()
+            nitf.metadata.extract_meta(dataset=nitf.dataset)
+            datastore.ingest(nitf.metadata(),
+                             nitf.image.extract_image(nitf.dataset),
+                             nitf.image.extract_image(nitf.dataset,
+                                                      downsample=300))
+    elif args.action == 'query':
+        datastore.query_metadata(key=args.key)
+
+if __name__ == '__main__':
+    main()

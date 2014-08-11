@@ -93,7 +93,7 @@ class TestDatastore(unittest2.TestCase):
         self._ds.connect()
         self._ds.init_table()
 
-        self._ds.ingest(i_3001a, image_stream_fh.read)
+        self._ds.ingest(i_3001a, image_stream_fh.read())
 
         # Clean up.
         image_stream_fh.close()

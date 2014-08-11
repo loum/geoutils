@@ -16,7 +16,6 @@ class TestGeoImage(unittest2.TestCase):
         cls._file = os.path.join('geoutils',
                                  'tests',
                                  'files',
-                                 #'FIL7_32N_065E_CSI3_1_2_64.ntf')
                                  'i_3001a.ntf')
 
     @classmethod

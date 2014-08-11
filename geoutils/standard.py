@@ -22,6 +22,7 @@ class Standard(object):
     _filename = None
     _dataset = None
     _metadata = geoutils.Metadata()
+    _image = geoutils.GeoImage()
 
     def __init__(self, source_filename=None):
         self._filename = source_filename
@@ -49,6 +50,14 @@ class Standard(object):
     @metadata.setter
     def metadata(self, value):
         self._metadata = value
+
+    @property
+    def image(self):
+        return self._image
+
+    @image.setter
+    def image(self, value):
+        self._image = value
 
     def open(self):
         """Attempts to open :attr:`filename` as a raster file as a
