@@ -87,15 +87,26 @@ class TestDatastore(unittest2.TestCase):
     def test_ingest(self):
         """Attempt to ingest the metadata component into the datastore.
         """
-        image_stream_file =  os.path.join('geoutils',
-                                          'tests',
-                                          'files',
-                                          'image_stream.out')
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         'image_stream.out')
         image_fh = open(image_stream_file, 'rb')
+
+        thumb_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
+        thumb_fh = open(thumb_stream_file, 'rb')
 
         from geoutils.tests.files.ingest_data_01 import DATA
         table = DATA['tables']
-        table['image_test'] = {'cf': {'cv': {'image': image_fh.read}}}
+        table['image_test'] = {'cf': {'cq': {'x_coord_size': '1024',
+                                             'y_coord_size': '1024'},
+                                      'cv': {'image': image_fh.read}}}
+        table['thumb_test'] = {'cf': {'cq': {'x_coord_size': '300',
+                                             'y_coord_size': '300'},
+                                      'cv': {'image': thumb_fh.read}}}
 
         self._ds.connect()
         self._ds.init_table(self._ds.meta_table_name)
@@ -106,6 +117,7 @@ class TestDatastore(unittest2.TestCase):
 
         # Clean up.
         DATA['tables'].pop('image_test', None)
+        DATA['tables'].pop('thumb_test', None)
         image_fh.close()
         self._ds.delete_table(self._ds.meta_table_name)
         self._ds.delete_table(self._ds.image_table_name)
@@ -146,13 +158,93 @@ class TestDatastore(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table('meta_test')
 
+    def test_query_image(self):
+        """Attempt to query the image component from the datastore.
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         'image_stream.out')
+        image_fh = open(image_stream_file, 'rb')
+
+        data = {'row_id': 'i_3001a'}
+        data['tables'] = {'image_test': {
+                          'cf': {
+                              'cq': {
+                                  'x_coord_size': '1024',
+                                  'y_coord_size': '1024'},
+                              'val': {
+                                  'image': image_fh.read}}}}
+
+        self._ds.connect()
+        self._ds.init_table(self._ds.image_table_name)
+
+        self._ds.ingest(data)
+
+        results = self._ds.query_image(table='image_test',
+                                       key='i_3001a')
+        received = None
+        for cell in results:
+            if cell.cf == 'image':
+                received = hashlib.md5(cell.val).hexdigest()
+                break
+
+        image_fh.seek(0)
+        expected = hashlib.md5(image_fh.read()).hexdigest()
+        msg = 'Ingested image stream differs from query result'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        image_fh.close()
+        self._ds.delete_table(self._ds.image_table_name)
+
+    def test_query_thumb(self):
+        """Attempt to query the thumb component from the datastore.
+        """
+        thumb_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
+        thumb_fh = open(thumb_stream_file, 'rb')
+
+        data = {'row_id': 'i_3001a'}
+        data['tables'] = {'thumb_test': {
+                          'cf': {
+                              'cq': {
+                                  'x_coord_size': '300',
+                                  'y_coord_size': '300'},
+                              'val': {
+                                  'thumb': thumb_fh.read}}}}
+
+        self._ds.connect()
+        self._ds.init_table(self._ds.thumb_table_name)
+
+        self._ds.ingest(data)
+
+        results = self._ds.query_image(table='thumb_test',
+                                       key='i_3001a')
+        received = None
+        for cell in results:
+            if cell.cf == 'thumb':
+                received = hashlib.md5(cell.val).hexdigest()
+                break
+
+        thumb_fh.seek(0)
+        expected = hashlib.md5(thumb_fh.read()).hexdigest()
+        msg = 'Ingested thumb stream differs from query result'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        thumb_fh.close()
+        self._ds.delete_table(self._ds.thumb_table_name)
+
     def test_reconstruct_image_300x300_PNG(self):
         """Reconstruct a 1D image stream to a 2D structure: 300x300 PNG.
         """
-        image_stream_file =  os.path.join('geoutils',
-                                          'tests',
-                                          'files',
-                                          '300x300.out')
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
         image_stream_fh = open(image_stream_file, 'rb')
         png_image = tempfile.NamedTemporaryFile('wb')
         dimensions = (300, 300)
@@ -174,10 +266,10 @@ class TestDatastore(unittest2.TestCase):
     def test_reconstruct_image_50x50_PNG(self):
         """Reconstruct a 1D image stream to a 2D structure: 50x50 PNG.
         """
-        image_stream_file =  os.path.join('geoutils',
-                                          'tests',
-                                          'files',
-                                          '50x50.out')
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '50x50_stream.out')
         image_stream_fh = open(image_stream_file, 'rb')
         png_image = tempfile.NamedTemporaryFile('wb')
         dimensions = (50, 50)

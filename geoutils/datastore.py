@@ -4,7 +4,6 @@
 """
 __all__ = ["Datastore"]
 
-import os
 import Image
 
 import pyaccumulo
@@ -51,10 +50,6 @@ class Datastore(object):
     .. attribute:: *image_table_name*
         Accumulo table name of the image library (defaults to
         ``image_library``)
-
-    .. attribute:: *thumb_table_name*
-        Accumulo table name of the image thumbs library (defaults to
-        ``thumb_library``)
 
     """
     _connection = None
@@ -240,6 +235,8 @@ class Datastore(object):
         """TODO
 
         """
+        log.info('Ingesting data ...')
+
         row_id = data.get('row_id')
         if row_id is None:
             log.error('Ingest error: no "row_id" defined')
@@ -253,25 +250,36 @@ class Datastore(object):
                 log.info('Creating mutation for Row ID: "%s"' % row_id)
                 mutation = pyaccumulo.Mutation(row_id)
 
-                if value.get('cf').get('cq') is not None:
-                    log.debug('Processing family|qualifiers ...')
-                    for key, val in value.get('cf').get('cq').iteritems():
-                        log.debug('Mutation: cf|cq: %s|%s' % (key, val))
-                        mutation.put(cf=key, cq=val)
-                    log.debug('family|qualifiers ingest component done.')
+                family_qualifiers = value.get('cf').get('cq')
+                self._ingest_family_qualifiers(family_qualifiers,
+                                               mutation)
 
-                if value.get('cf').get('cv') is not None:
-                    log.debug('Processing family|value ...')
-                    for key, val in value.get('cf').get('cv').iteritems():
-                        log.debug('Mutation: cf|cv: %s|%s' % (key, val))
-                        if callable(val):
-                            mutation.put(cf=key, cq=val())
-                        else:
-                            mutation.put(cf=key, cq=val)
-                    log.debug('family|value ingest component done.')
+                family_values = value.get('cf').get('val')
+                self._ingest_family_values(family_values, mutation)
 
                 writer.add_mutation(mutation)
                 writer.close()
+
+        log.info('Data ingestion complete')
+
+    def _ingest_family_qualifiers(self, family_qualifiers, mutation):
+        if family_qualifiers is not None:
+            log.debug('Processing family|qualifiers ...')
+            for key, val in family_qualifiers.iteritems():
+                log.debug('Mutation: cf|cq: %s|%s' % (key, val))
+                mutation.put(cf=key, cq=val)
+            log.debug('family|qualifiers ingest component done')
+
+    def _ingest_family_values(self, family_values, mutation):
+        if family_values is not None:
+            log.debug('Processing family|value ...')
+            for key, val in family_values.iteritems():
+                log.debug('Mutation: cf|val: %s|%s' % (key, val))
+                if callable(val):
+                    mutation.put(cf=key, val=val())
+                else:
+                    mutation.put(cf=key, val=val)
+            log.debug('family|value ingest component done')
 
     def query_metadata(self, table, key, display=True):
         """Query the metadata component from the datastore.
@@ -306,6 +314,37 @@ class Datastore(object):
         log.info('Query key "%s" complete' % key)
 
         return results_count
+
+    def query(self, table, key):
+        """TODO
+
+        """
+
+        log.info('Querying datastore table "%s" against key: "%s" ...' %
+                 (self.image_table_name, key))
+
+        scan_range = pyaccumulo.Range(srow=key, erow=key)
+        results = self.connection.scan(table=table,
+                                       scanrange=scan_range,
+                                       cols=[])
+
+        return results
+
+    def query_image(self, table, key):
+        """Query the metadata component from the datastore.
+
+        **Args:**
+            *table*: TODO
+
+            *key*: at this time, *key* relates to the NITF file name
+            (less the ``.ntf`` extension) that is used in the current
+            schema as the Row ID component of the row key.
+
+        **Returns:**
+            the image component of *key*
+
+        """
+        return self.query(table, key)
 
     def reconstruct_image(self, image_stream, dimensions):
         """Reconstruct a 1D stream to an image file.

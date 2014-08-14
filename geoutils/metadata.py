@@ -116,14 +116,6 @@ class Metadata(object):
         self._metadata.clear()
         self._metadata = values
 
-    def __call__(self):
-        return {'file': self.file,
-                'x_coord_size': str(self.x_coord_size),
-                'y_coord_size': str(self.y_coord_size),
-                'geogcs': self.geogcs,
-                'geoxform': self.geoxform,
-                'metadata': self.metadata}
-
     def extract_meta(self, dataset):
         """Attempts to extract the metadata from the
         :attr:`geoutils.Standard.dataset` *dataset*

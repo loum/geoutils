@@ -14,6 +14,7 @@ class TestStandard(unittest2.TestCase):
     """
     @classmethod
     def setUpClass(cls):
+        cls.maxDiff = None
         cls._file = os.path.join('geoutils',
                                  'tests',
                                  'files',
@@ -38,13 +39,28 @@ class TestStandard(unittest2.TestCase):
         received = None
 
     def test_open_file_given(self):
-        """Attempt to open a GDALDataset stream -- valid NITF file.
+        """Attempt to open a GDALDataset stream: valid NITF file.
         """
         self._standard.filename = self._file
         self._standard.open()
         received = self._standard.dataset
         msg = 'NITF open should set geoutils.Standard.dataset attribute'
         self.assertIsInstance(received, gdal.Dataset, msg)
+
+    def test_callable(self):
+        """Call to geoutils.Standard
+        """
+        self._standard.filename = self._file
+        self._standard.open()
+
+        received = self._standard()
+
+        from geoutils.tests.files.ingest_data_01 import DATA
+        expected = DATA['tables']['meta_test']
+        msg = 'Standard callable return value error'
+        self.assertDictEqual(received['tables']['meta_test'],
+                             expected,
+                             msg)
 
     @classmethod
     def tearDown(cls):
