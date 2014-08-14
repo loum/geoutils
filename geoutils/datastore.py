@@ -5,6 +5,7 @@
 __all__ = ["Datastore"]
 
 import os
+import Image
 
 import pyaccumulo
 from thrift.transport.TTransport import TTransportException
@@ -43,9 +44,17 @@ class Datastore(object):
         Password credential of the Accumulo proxy host connection
         (defaults to the empty string)
 
+    .. attribute:: *meta_table_name*
+        Accumulo table name of the image metadat library (defaults to
+        ``meta_library``)
+
     .. attribute:: *image_table_name*
         Accumulo table name of the image library (defaults to
         ``image_library``)
+
+    .. attribute:: *thumb_table_name*
+        Accumulo table name of the image thumbs library (defaults to
+        ``thumb_library``)
 
     """
     _connection = None
@@ -53,7 +62,9 @@ class Datastore(object):
     _port = 42425
     _user = 'root'
     _password = ''
+    _meta_table_name = 'meta_library'
     _image_table_name = 'image_library'
+    _thumb_table_name = 'thumb_library'
 
     @property
     def connection(self):
@@ -96,6 +107,14 @@ class Datastore(object):
         self._password = value
 
     @property
+    def meta_table_name(self):
+        return self._meta_table_name
+
+    @meta_table_name.setter
+    def meta_table_name(self, value):
+        self._meta_table_name = value
+
+    @property
     def image_table_name(self):
         return self._image_table_name
 
@@ -103,16 +122,25 @@ class Datastore(object):
     def image_table_name(self, value):
         self._image_table_name = value
 
+    @property
+    def thumb_table_name(self):
+        return self._thumb_table_name
+
+    @thumb_table_name.setter
+    def thumb_table_name(self, value):
+        self._thumb_table_name = value
+
     def __del__(self):
         self.close()
 
-    def _create_writer(self):
+    def _create_writer(self, table):
         writer = None
 
         if self.connection is None:
             log.error('Writer error: Accumulo connection not detected.')
         else:
-            writer = self.connection.create_batch_writer(self.image_table_name)
+            log.debug('Creating writer for table "%s"' %table)
+            writer = self.connection.create_batch_writer(table)
 
         return writer
 
@@ -143,37 +171,34 @@ class Datastore(object):
                 AccumuloSecurityException) as err:
             log.error('Connection error: "%s"' % err)
 
-    def init_table(self, name=None):
+    def init_table(self, name):
         """Initialise the datastore table.
 
         **Kwargs:**
             *name*: override the name of the image table to delete
 
         """
-        if name is not None:
-            self.image_table_name = name
-
         status = False
         log.info('Initialising the image library table: "%s" ...' %
                  self.image_table_name)
 
         if self.connection is not None:
-            if self.connection.table_exists(self.image_table_name):
+            if self.connection.table_exists(name):
                 log.error('Image table "%s" already exists!' %
                         self.image_table_name)
             else:
                 # Finally, create the table.
-                self.connection.create_table(self.image_table_name)
+                self.connection.create_table(name)
                 status = True
         else:
             log.error('Connection state not detected. Table not created')
 
         log.info('Image library table "%s" creation status: "%s"' %
-                 (self.image_table_name, status))
+                 (name, status))
 
         return status
 
-    def delete_table(self, name=None):
+    def delete_table(self, name):
         """Remove an existing datastore table.
 
         .. note::
@@ -184,25 +209,20 @@ class Datastore(object):
             *name*: override the name of the image table to delete
 
         """
-        if name is not None:
-            self.image_table_name = name
-
         status = False
-        log.info('Deleting the image library table: "%s" ...' %
-                 self.image_table_name)
+        log.info('Deleting the image library table: "%s" ...' % name)
 
         if self.connection is not None:
-            if self.connection.table_exists(self.image_table_name):
-                self.connection.delete_table(self.image_table_name)
+            if self.connection.table_exists(name):
+                self.connection.delete_table(name)
                 status = True
             else:
-                log.error('Image table "%s" does not exist!' %
-                          self.image_table_name)
+                log.error('Image table "%s" does not exist!' % name)
         else:
             log.error('Connection state not detected. Table not deleted')
 
         log.info('Image library table "%s" deletion status: "%s"' %
-                 (self.image_table_name, status))
+                 (name, status))
 
         return status
 
@@ -216,67 +236,49 @@ class Datastore(object):
             self.connection.close()
             log.info('Datastore connection closed.')
 
-    def ingest(self,
-               metadata,
-               image_stream=None,
-               thumb_image_stream=None):
-        """Ingest the metadata component into the datastore.
-
-        **Args:**
-            *metadata*: dictionary structure that represents the
-            metadata component to ingest
-
-            *image_stream*:
-            *thumb_image_stream*: referenct to a
-            :func:`osgeo.gdal.Dataset.GetRasterBand.ReadRaster` stream
-            typically provided by :meth:`geoutils.GeoImage.extract_image`
+    def ingest(self, data):
+        """TODO
 
         """
-        row_id = None
+        row_id = data.get('row_id')
+        if row_id is None:
+            log.error('Ingest error: no "row_id" defined')
+        else:
+            for table, value in data.get('tables').iteritems():
+                log.debug('Processing ingest for table: "%s"' % table)
+                writer = self._create_writer(table)
+                if writer is None:
+                    break
 
-        writer = self._create_writer()
-        if writer is not None:
-            row_id = metadata.get('file')
-            if row_id is None:
-                log.error('Unable to generate Row ID from source data')
-            else:
-                row_id = os.path.splitext(row_id)[0]
-                log.debug('row id: %s' % row_id)
-
+                log.info('Creating mutation for Row ID: "%s"' % row_id)
                 mutation = pyaccumulo.Mutation(row_id)
-                mutation.put(cf='file', cq=metadata.get('file'))
-                mutation.put(cf='x_coord_size',
-                             cq=metadata.get('x_coord_size'))
-                mutation.put(cf='y_coord_size',
-                             cq=metadata.get('y_coord_size'))
-                mutation.put(cf='geogcs',
-                             cq=metadata.get('geogcs'))
 
-                # geoxform
-                index = 0
-                for value in metadata.get('geoxform'):
-                    mutation.put(cf='geoxform=%d' % index, cq=repr(value))
-                    index += 1
+                if value.get('cf').get('cq') is not None:
+                    log.debug('Processing family|qualifiers ...')
+                    for key, val in value.get('cf').get('cq').iteritems():
+                        log.debug('Mutation: cf|cq: %s|%s' % (key, val))
+                        mutation.put(cf=key, cq=val)
+                    log.debug('family|qualifiers ingest component done.')
 
-                # metadata
-                for key, value in metadata.get('metadata').iteritems():
-                    mutation.put(cf='metadata=%s' % key, cq=value)
-
-                # Image.
-                if image_stream is not None:
-                    mutation.put(cf='image', val=image_stream)
-                # Image thumb.
-                if thumb_image_stream is not None:
-                    mutation.put(cf='thumb', val=thumb_image_stream)
+                if value.get('cf').get('cv') is not None:
+                    log.debug('Processing family|value ...')
+                    for key, val in value.get('cf').get('cv').iteritems():
+                        log.debug('Mutation: cf|cv: %s|%s' % (key, val))
+                        if callable(val):
+                            mutation.put(cf=key, cq=val())
+                        else:
+                            mutation.put(cf=key, cq=val)
+                    log.debug('family|value ingest component done.')
 
                 writer.add_mutation(mutation)
+                writer.close()
 
-            writer.close()
-
-    def query_metadata(self, key, display=True):
+    def query_metadata(self, table, key, display=True):
         """Query the metadata component from the datastore.
 
         **Args:**
+            *table*: TODO
+
             *key*: at this time, *key* relates to the NITF file name
             (less the ``.ntf`` extension) that is used in the current
             schema as the Row ID component of the row key.
@@ -292,7 +294,7 @@ class Datastore(object):
                  (self.image_table_name, key))
 
         scan_range = pyaccumulo.Range(srow=key, erow=key)
-        results = self.connection.scan(table=self.image_table_name,
+        results = self.connection.scan(table=table,
                                        scanrange=scan_range,
                                        cols=[])
         results_count = 0
@@ -304,3 +306,30 @@ class Datastore(object):
         log.info('Query key "%s" complete' % key)
 
         return results_count
+
+    def reconstruct_image(self, image_stream, dimensions):
+        """Reconstruct a 1D stream to an image file.
+
+        **Args:**
+            *image_stream*: ``string`` type stream of raw binary
+            floating point data that is a 1D representation of an
+            image file.  This is typically the format that is stored
+            in the Accumulo image library
+
+            *dimensions*: tuple structure that represents the rows
+            and columns of the 1D image.  This information is used
+            to recreate the original 2D structure of the image
+
+        **Returns:**
+            A :mod:`Image` image in memory from pixel data provided
+            by the *image_stream*
+
+        """
+        log.debug('Reconstructing image with dimensions "%s"' %
+                  str(dimensions))
+
+        return Image.frombuffer('L',
+                                dimensions,
+                                image_stream(),
+                                'raw',
+                                'L', 0, 1)
