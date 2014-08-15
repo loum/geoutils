@@ -35,22 +35,32 @@ def main():
     datastore.password = settings.PASSWORD
     datastore.connect()
 
-    
-    datastore.image_table_name = settings.TABLE
     if args.action == 'ingest':
-        datastore.delete_table()
-        datastore.init_table()
+        datastore.delete_table('meta_test')
+        datastore.delete_table('image_test')
+        datastore.delete_table('thumb_test')
+        datastore.init_table('meta_test')
+        datastore.init_table('image_test')
+        datastore.init_table('thumb_test')
 
         if args.file is not None:
             nitf = geoutils.NITF(source_filename=args.file)
             nitf.open()
-            nitf.metadata.extract_meta(dataset=nitf.dataset)
-            datastore.ingest(nitf.metadata(),
-                             nitf.image.extract_image(nitf.dataset),
-                             nitf.image.extract_image(nitf.dataset,
-                                                      downsample=300))
+            datastore.ingest(nitf())
     elif args.action == 'query':
-        datastore.query_metadata(key=args.key)
+        datastore.query_metadata(table='meta_test', key=args.key)
+
+        # The following 2 items (image and thumb) have been commented
+        # out as the query will only return a stream of 1D image data
+        # in bytes.  However, if you are curious, just remove the
+        # comments.
+        #cells = datastore.query_image(table='image_test', key=args.key)
+        #for cell in cells:
+        #    print(cell)
+
+        #cells = datastore.query_image(table='thumb_test', key=args.key)
+        #for cell in cells:
+        #    print(cell)
 
 if __name__ == '__main__':
     main()

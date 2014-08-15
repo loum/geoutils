@@ -51,25 +51,33 @@ class GeoImage(object):
             ``None`` otherwise.
 
         """
-        log.info('Opening image stream ...')
+        def generate():
+            """TODO
 
-        if dataset is None:
-            log.warn('Extraction failed: dataset stream not provided')
-            return
-        else:
-            band = dataset.GetRasterBand(1)
-            x_size = band.XSize
-            y_size = band.YSize
-            if downsample is not None:
-                log.info('Downsampling image to %d columns' % downsample)
-                (x_size, y_size) = self.scale((band.XSize,
-                                               band.YSize), downsample)
+            """
+            log.info('Opening image stream ...')
 
-            return band.ReadRaster(0, 0,
-                                   band.XSize,
-                                   band.YSize,
-                                   buf_xsize=x_size,
-                                   buf_ysize=y_size)
+            if dataset is None:
+                log.warn('Extraction failed: dataset stream not provided')
+                return
+            else:
+                band = dataset.GetRasterBand(1)
+                x_size = band.XSize
+                y_size = band.YSize
+                if downsample is not None:
+                    log.info('Downsample image to %d columns' %
+                             downsample)
+                    (x_size, y_size) = self.scale((band.XSize,
+                                                   band.YSize),
+                                                  downsample)
+
+                return band.ReadRaster(0, 0,
+                                       band.XSize,
+                                       band.YSize,
+                                       buf_xsize=x_size,
+                                       buf_ysize=y_size)
+
+        return generate
 
     def scale(self, old_scale, new_x_scale=300):
         """Provide the new image dimensions based on a new *new_x_scale*

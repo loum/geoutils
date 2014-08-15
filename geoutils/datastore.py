@@ -43,23 +43,12 @@ class Datastore(object):
         Password credential of the Accumulo proxy host connection
         (defaults to the empty string)
 
-    .. attribute:: *meta_table_name*
-        Accumulo table name of the image metadat library (defaults to
-        ``meta_library``)
-
-    .. attribute:: *image_table_name*
-        Accumulo table name of the image library (defaults to
-        ``image_library``)
-
     """
     _connection = None
     _host = 'localhost'
     _port = 42425
     _user = 'root'
     _password = ''
-    _meta_table_name = 'meta_library'
-    _image_table_name = 'image_library'
-    _thumb_table_name = 'thumb_library'
 
     @property
     def connection(self):
@@ -100,30 +89,6 @@ class Datastore(object):
     @password.setter
     def password(self, value):
         self._password = value
-
-    @property
-    def meta_table_name(self):
-        return self._meta_table_name
-
-    @meta_table_name.setter
-    def meta_table_name(self, value):
-        self._meta_table_name = value
-
-    @property
-    def image_table_name(self):
-        return self._image_table_name
-
-    @image_table_name.setter
-    def image_table_name(self, value):
-        self._image_table_name = value
-
-    @property
-    def thumb_table_name(self):
-        return self._thumb_table_name
-
-    @thumb_table_name.setter
-    def thumb_table_name(self, value):
-        self._thumb_table_name = value
 
     def __del__(self):
         self.close()
@@ -174,13 +139,11 @@ class Datastore(object):
 
         """
         status = False
-        log.info('Initialising the image library table: "%s" ...' %
-                 self.image_table_name)
+        log.info('Initialising the image library table: "%s" ...' % name)
 
         if self.connection is not None:
             if self.connection.table_exists(name):
-                log.error('Image table "%s" already exists!' %
-                        self.image_table_name)
+                log.error('Image table "%s" already exists!' % name)
             else:
                 # Finally, create the table.
                 self.connection.create_table(name)
@@ -298,13 +261,8 @@ class Datastore(object):
             the metadata component of *key*
 
         """
-        log.info('Querying datastore table "%s" against key: "%s" ...' %
-                 (self.image_table_name, key))
+        results = self.query(table=table, key=key)
 
-        scan_range = pyaccumulo.Range(srow=key, erow=key)
-        results = self.connection.scan(table=table,
-                                       scanrange=scan_range,
-                                       cols=[])
         results_count = 0
         for cell in results:
             results_count += 1
@@ -319,9 +277,8 @@ class Datastore(object):
         """TODO
 
         """
-
         log.info('Querying datastore table "%s" against key: "%s" ...' %
-                 (self.image_table_name, key))
+                 (table, key))
 
         scan_range = pyaccumulo.Range(srow=key, erow=key)
         results = self.connection.scan(table=table,

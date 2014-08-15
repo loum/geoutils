@@ -32,7 +32,7 @@ class TestGeoImage(unittest2.TestCase):
         """Extract the image from the NITF file: no dataset.
         """
         self._image.filename = self._file
-        received = self._image.extract_image(None)
+        received = self._image.extract_image(None)()
         msg = 'Unsuccessful image extraction should return None'
         self.assertIsNone(received, msg)
 
@@ -42,7 +42,8 @@ class TestGeoImage(unittest2.TestCase):
         nitf = geoutils.NITF(source_filename=self._file)
         nitf.open()
 
-        received = self._image.extract_image(dataset=nitf.dataset)
+        handle = self._image.extract_image(dataset=nitf.dataset)
+        received = handle()
         msg = 'Successful image extraction should not return None'
         self.assertIsNotNone(received, msg)
 

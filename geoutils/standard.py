@@ -19,12 +19,26 @@ class Standard(object):
 
     .. attribute: filename
 
+    .. attribute:: *meta_table_name*
+        Accumulo table name of the image metadata library (defaults to
+        ``meta_test``)
+
+    .. attribute:: *image_table_name*
+        Accumulo table name of the image library (defaults to
+        ``image_test``)
+
+    .. attribute:: *thumb_table_name*
+        Accumulo table name of the thumb library (defaults to
+        ``thumb_test``)
+
     """
     _filename = None
     _dataset = None
     _metadata = geoutils.Metadata()
     _image = geoutils.GeoImage()
     _meta_table_name = 'meta_test'
+    _image_table_name = 'image_test'
+    _thumb_table_name = 'thumb_test'
 
     def __init__(self, source_filename=None):
         self._filename = source_filename
@@ -39,32 +53,36 @@ class Standard(object):
             a dictionary structure that can be fed into a
         :class:`geoutils.Datastore` ingest
 
+        .. todo::
+
+            Make the thumb image dimension settings configuratble.
+            Currently, they are hard-wired to 300 columns
+
         """
+        log.info('Building ingest data structure ...')
+
         data = {}
-
-        self.metadata.extract_meta(self.dataset)
-
         file_basename = os.path.basename(self._filename)
-        data['row_id'] = os.path.splitext(file_basename)
+        data['row_id'] = os.path.splitext(file_basename)[0]
 
         data['tables'] = {}
 
-        # Metadata table.
-        meta = data['tables'][self._meta_table_name] = {}
-        meta['cf'] = {'cq': {}}
-        meta['cf']['cq'] = {'file': self.metadata.file,
-                            'x_coord_size': str(self.metadata.x_coord_size),
-                            'y_coord_size': str(self.metadata.y_coord_size),
-                            'geogcs': self.metadata.geogcs}
+        meta_structure = self._build_meta_data_structure()
+        data['tables'][self._meta_table_name] = {'cf': meta_structure}
 
-        count = 0
-        for geoxform in self._metadata.geoxform:
-            meta['cf']['cq']['geoxform=%d' % count] = repr(geoxform)
-            count += 1
+        image_structure = self._build_image_data_structure()
+        data['tables'][self._image_table_name] = {'cf': image_structure}
+        dimensions = {'x_coord_size': str(self.metadata.x_coord_size),
+                      'y_coord_size': str(self.metadata.y_coord_size)}
+        data['tables'][self._image_table_name]['cf']['cq'] = dimensions
 
-        for meta_key in self._metadata.metadata:
-            meta_value = self._metadata.metadata[meta_key]
-            meta['cf']['cq']['metadata=%s' % meta_key] = meta_value
+        thumb_structure = self._build_image_data_structure(downsample=300)
+        data['tables'][self._thumb_table_name] = {'cf': thumb_structure}
+        thumb_dimensions = {'x_coord_size': '300',
+                            'y_coord_size': '300'}
+        data['tables'][self._thumb_table_name]['cf']['cq'] = thumb_dimensions
+
+        log.info('Ingest data structure build done')
 
         return data
 
@@ -88,17 +106,78 @@ class Standard(object):
     def metadata(self):
         return self._metadata
 
-    @metadata.setter
-    def metadata(self, value):
-        self._metadata = value
-
     @property
     def image(self):
         return self._image
 
-    @image.setter
-    def image(self, value):
-        self._image = value
+    @property
+    def meta_table_name(self):
+        return self._meta_table_name
+
+    @meta_table_name.setter
+    def meta_table_name(self, value):
+        self._meta_table_name = value
+
+    @property
+    def image_table_name(self):
+        return self._image_table_name
+
+    @image_table_name.setter
+    def image_table_name(self, value):
+        self._image_table_name = value
+
+    @property
+    def thumb_table_name(self):
+        return self._thumb_table_name
+
+    @thumb_table_name.setter
+    def thumb_table_name(self, value):
+        self._thumb_table_name = value
+
+    def _build_meta_data_structure(self):
+        """TODO
+
+        """
+        log.info('Building ingest metadata component ...')
+
+        self.metadata.extract_meta(self.dataset)
+
+        data = {}
+        data['cq'] = {'file': self.metadata.file,
+                      'x_coord_size': str(self.metadata.x_coord_size),
+                      'y_coord_size': str(self.metadata.y_coord_size),
+                      'geogcs': self.metadata.geogcs}
+
+        count = 0
+        for geoxform in self._metadata.geoxform:
+            data['cq']['geoxform=%d' % count] = repr(geoxform)
+            count += 1
+
+        for meta_key in self._metadata.metadata:
+            meta_value = self._metadata.metadata[meta_key]
+            data['cq']['metadata=%s' % meta_key] = meta_value
+
+        log.info('Ingest metadata structure build done')
+
+        return data
+
+    def _build_image_data_structure(self, downsample=None):
+        """TODO
+
+        """
+        msg = 'Building ingest image component'
+        if downsample is not None:
+            msg = '%s: downsample %d columns' % (msg, downsample)
+        log.info('%s ...' % msg)
+
+        data = {}
+
+        data['val'] = {'image': self.image.extract_image(self.dataset,
+                                                         downsample)}
+
+        log.info('Ingest image structure build done')
+
+        return data
 
     def open(self):
         """Attempts to open :attr:`filename` as a raster file as a

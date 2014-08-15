@@ -24,12 +24,13 @@ class TestDatastore(unittest2.TestCase):
         cls._mock = geoutils.MockServer(conf)
         cls._mock.start()
 
+        cls._meta_table_name = 'meta_test'
+        cls._image_table_name = 'image_test'
+        cls._thumb_table_name = 'thumb_test'
+
     @classmethod
     def setUp(cls):
         cls._ds = geoutils.Datastore()
-        cls._ds.meta_table_name = 'meta_test'
-        cls._ds.image_table_name = 'image_test'
-        cls._ds.thumb_table_name = 'thumb_test'
 
     def test_init(self):
         """Initialise a :class:`geoutils.Datastore` object.
@@ -57,7 +58,7 @@ class TestDatastore(unittest2.TestCase):
     def test_init_table_no_connection_state(self):
         """Initialise the image library table: no connection state.
         """
-        received = self._ds.init_table('image_test')
+        received = self._ds.init_table(self._image_table_name)
         msg = 'Table initialisation (no connection) should return False'
         self.assertFalse(received, msg)
 
@@ -65,22 +66,22 @@ class TestDatastore(unittest2.TestCase):
         """Initialise/delete image library table: with connection state.
         """
         self._ds.connect()
-        received = self._ds.init_table('image_test')
+        received = self._ds.init_table(self._image_table_name)
         msg = 'Table initialisation should return True'
         self.assertTrue(received, msg)
 
         # Try again.  An existing table should fail.
-        received = self._ds.init_table('image_test')
+        received = self._ds.init_table(self._image_table_name)
         msg = 'Table initialisation (existing table) should return False'
         self.assertFalse(received, msg)
 
         # Now delete.
-        received = self._ds.delete_table('image_test')
+        received = self._ds.delete_table(self._image_table_name)
         msg = 'Table deletion (existing table) should return True'
         self.assertTrue(received, msg)
 
         # Try delete again.  Missing table should fail.
-        received = self._ds.delete_table('image_test')
+        received = self._ds.delete_table(self._image_table_name)
         msg = 'Table deletion (missing table) should return False'
         self.assertFalse(received, msg)
 
@@ -100,43 +101,45 @@ class TestDatastore(unittest2.TestCase):
         thumb_fh = open(thumb_stream_file, 'rb')
 
         from geoutils.tests.files.ingest_data_01 import DATA
+        image_tbl = self._image_table_name
+        thumb_tbl = self._thumb_table_name
         table = DATA['tables']
-        table['image_test'] = {'cf': {'cq': {'x_coord_size': '1024',
-                                             'y_coord_size': '1024'},
-                                      'cv': {'image': image_fh.read}}}
-        table['thumb_test'] = {'cf': {'cq': {'x_coord_size': '300',
-                                             'y_coord_size': '300'},
-                                      'cv': {'image': thumb_fh.read}}}
+        table[image_tbl] = {'cf': {'cq': {'x_coord_size': '1024',
+                                          'y_coord_size': '1024'},
+                                   'cv': {'image': image_fh.read}}}
+        table[thumb_tbl] = {'cf': {'cq': {'x_coord_size': '300',
+                                          'y_coord_size': '300'},
+                                   'cv': {'image': thumb_fh.read}}}
 
         self._ds.connect()
-        self._ds.init_table(self._ds.meta_table_name)
-        self._ds.init_table(self._ds.image_table_name)
-        self._ds.init_table(self._ds.thumb_table_name)
+        self._ds.init_table(self._meta_table_name)
+        self._ds.init_table(self._image_table_name)
+        self._ds.init_table(self._thumb_table_name)
 
         self._ds.ingest(DATA)
 
         # Clean up.
-        DATA['tables'].pop('image_test', None)
-        DATA['tables'].pop('thumb_test', None)
+        DATA['tables'].pop(self._image_table_name, None)
+        DATA['tables'].pop(self._thumb_table_name, None)
         image_fh.close()
-        self._ds.delete_table(self._ds.meta_table_name)
-        self._ds.delete_table(self._ds.image_table_name)
-        self._ds.delete_table(self._ds.thumb_table_name)
+        self._ds.delete_table(self._meta_table_name)
+        self._ds.delete_table(self._image_table_name)
+        self._ds.delete_table(self._thumb_table_name)
 
     def test_query_metadata_no_data(self):
         """Query the metadata component from an empty datastore.
         """
         self._ds.connect()
-        self._ds.init_table('image_test')
+        self._ds.init_table(self._image_table_name)
 
-        received = self._ds.query_metadata(table='image_test',
+        received = self._ds.query_metadata(table=self._image_table_name,
                                            key='i_3001a')
         expected = 0
         msg = 'Scan across empty table should return 0 cells'
         self.assertEqual(received, expected, msg)
 
         # Clean up.
-        self._ds.delete_table('image_test')
+        self._ds.delete_table(self._image_table_name)
 
     def test_query_metadata_with_data(self):
         """Attempt to query the metadata component from the datastore.
@@ -144,11 +147,11 @@ class TestDatastore(unittest2.TestCase):
         from geoutils.tests.files.ingest_data_01 import DATA
 
         self._ds.connect()
-        self._ds.init_table('meta_test')
+        self._ds.init_table(self._meta_table_name)
 
         self._ds.ingest(DATA)
 
-        received = self._ds.query_metadata(table='meta_test',
+        received = self._ds.query_metadata(table=self._meta_table_name,
                                            key='i_3001a',
                                            display=False)
         expected = 73
@@ -156,7 +159,7 @@ class TestDatastore(unittest2.TestCase):
         self.assertEqual(received, expected, msg)
 
         # Clean up.
-        self._ds.delete_table('meta_test')
+        self._ds.delete_table(self._meta_table_name)
 
     def test_query_image(self):
         """Attempt to query the image component from the datastore.
@@ -168,7 +171,7 @@ class TestDatastore(unittest2.TestCase):
         image_fh = open(image_stream_file, 'rb')
 
         data = {'row_id': 'i_3001a'}
-        data['tables'] = {'image_test': {
+        data['tables'] = {self._image_table_name: {
                           'cf': {
                               'cq': {
                                   'x_coord_size': '1024',
@@ -177,11 +180,11 @@ class TestDatastore(unittest2.TestCase):
                                   'image': image_fh.read}}}}
 
         self._ds.connect()
-        self._ds.init_table(self._ds.image_table_name)
+        self._ds.init_table(self._image_table_name)
 
         self._ds.ingest(data)
 
-        results = self._ds.query_image(table='image_test',
+        results = self._ds.query_image(table=self._image_table_name,
                                        key='i_3001a')
         received = None
         for cell in results:
@@ -196,7 +199,7 @@ class TestDatastore(unittest2.TestCase):
 
         # Clean up.
         image_fh.close()
-        self._ds.delete_table(self._ds.image_table_name)
+        self._ds.delete_table(self._image_table_name)
 
     def test_query_thumb(self):
         """Attempt to query the thumb component from the datastore.
@@ -208,7 +211,7 @@ class TestDatastore(unittest2.TestCase):
         thumb_fh = open(thumb_stream_file, 'rb')
 
         data = {'row_id': 'i_3001a'}
-        data['tables'] = {'thumb_test': {
+        data['tables'] = {self._thumb_table_name: {
                           'cf': {
                               'cq': {
                                   'x_coord_size': '300',
@@ -217,11 +220,11 @@ class TestDatastore(unittest2.TestCase):
                                   'thumb': thumb_fh.read}}}}
 
         self._ds.connect()
-        self._ds.init_table(self._ds.thumb_table_name)
+        self._ds.init_table(self._thumb_table_name)
 
         self._ds.ingest(data)
 
-        results = self._ds.query_image(table='thumb_test',
+        results = self._ds.query_image(table=self._thumb_table_name,
                                        key='i_3001a')
         received = None
         for cell in results:
@@ -236,7 +239,7 @@ class TestDatastore(unittest2.TestCase):
 
         # Clean up.
         thumb_fh.close()
-        self._ds.delete_table(self._ds.thumb_table_name)
+        self._ds.delete_table(self._thumb_table_name)
 
     def test_reconstruct_image_300x300_PNG(self):
         """Reconstruct a 1D image stream to a 2D structure: 300x300 PNG.
@@ -293,6 +296,10 @@ class TestDatastore(unittest2.TestCase):
         """Shutdown the Accumulo mock proxy server (if enabled)
         """
         cls._mock.stop()
+
+        del cls._meta_table_name
+        del cls._image_table_name
+        del cls._thumb_table_name
 
     @classmethod
     def tearDown(cls):

@@ -1,4 +1,4 @@
-# pylint: disable=R0904,C0103
+# pylint: disable=R0904,C0103,W0212
 """:class:`geoutils.Standard` tests.
 
 """
@@ -47,20 +47,43 @@ class TestStandard(unittest2.TestCase):
         msg = 'NITF open should set geoutils.Standard.dataset attribute'
         self.assertIsInstance(received, gdal.Dataset, msg)
 
-    def test_callable(self):
-        """Call to geoutils.Standard
+    def test_build_meta_data_structure(self):
+        """Build the metadata ingest data structure.
         """
         self._standard.filename = self._file
         self._standard.open()
 
-        received = self._standard()
+        received = self._standard._build_meta_data_structure()
 
         from geoutils.tests.files.ingest_data_01 import DATA
-        expected = DATA['tables']['meta_test']
-        msg = 'Standard callable return value error'
-        self.assertDictEqual(received['tables']['meta_test'],
-                             expected,
-                             msg)
+        expected = DATA['tables']['meta_test']['cf']
+        msg = 'Metadata data structure result error'
+        self.assertDictEqual(received, expected, msg)
+
+    def test_image_data_structure(self):
+        """Build the image ingest data structure.
+        """
+        self._standard.filename = self._file
+        self._standard.open()
+
+        image_data = self._standard._build_image_data_structure()
+        received = image_data['val']['image']
+        msg = 'Image data structure result error'
+        self.assertTrue(callable(received), msg)
+
+    def test_callable(self):
+        """Invoke the geoutils.Standard object instance.
+        """
+        # Note: this is not really a test but more as a visual
+        # aid that allows you to dump the ingest data structure
+        # (but we do check the generated Row ID ...)
+        self._standard.filename = self._file
+        self._standard.open()
+        received = self._standard()
+        expected = 'i_3001a'
+        msg = 'Callable Row ID error'
+        self.assertEqual(received.get('row_id'), expected, msg)
+        #print(received)
 
     @classmethod
     def tearDown(cls):
