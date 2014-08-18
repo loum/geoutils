@@ -19,6 +19,10 @@ class TestStandard(unittest2.TestCase):
                                  'tests',
                                  'files',
                                  'i_3001a.ntf')
+        cls._file_no_geogcs = os.path.join('geoutils',
+                                           'tests',
+                                           'files',
+                                           'i_6130e.ntf')
 
     @classmethod
     def setUp(cls):
@@ -60,6 +64,19 @@ class TestStandard(unittest2.TestCase):
         msg = 'Metadata data structure result error'
         self.assertDictEqual(received, expected, msg)
 
+    def test_build_meta_data_structure_missing_geogcs(self):
+        """Build the metadata ingest data structure: missing GEOGCS.
+        """
+        self._standard.filename = self._file_no_geogcs
+        self._standard.open()
+
+        received = self._standard._build_meta_data_structure()
+
+        from geoutils.tests.files.ingest_data_02 import DATA
+        expected = DATA['tables']['meta_test']['cf']
+        msg = 'Metadata data structure result error'
+        self.assertDictEqual(received, expected, msg)
+
     def test_image_data_structure(self):
         """Build the image ingest data structure.
         """
@@ -93,3 +110,4 @@ class TestStandard(unittest2.TestCase):
     @classmethod
     def tearDownClass(cls):
         del cls._file
+        del cls._file_no_geogcs

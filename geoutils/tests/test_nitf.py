@@ -33,7 +33,7 @@ class TestNITF(unittest2.TestCase):
         """
         self._nitf.filename = self._file
         self._nitf.open()
-        self._nitf.metadata.extract_meta(self._nitf.dataset)
+        self._nitf.meta.extract_meta(self._nitf.dataset)
 
     @classmethod
     def tearDown(cls):

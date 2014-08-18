@@ -34,7 +34,7 @@ class Standard(object):
     """
     _filename = None
     _dataset = None
-    _metadata = geoutils.Metadata()
+    _meta = geoutils.Metadata()
     _image = geoutils.GeoImage()
     _meta_table_name = 'meta_test'
     _image_table_name = 'image_test'
@@ -72,8 +72,8 @@ class Standard(object):
 
         image_structure = self._build_image_data_structure()
         data['tables'][self._image_table_name] = {'cf': image_structure}
-        dimensions = {'x_coord_size': str(self.metadata.x_coord_size),
-                      'y_coord_size': str(self.metadata.y_coord_size)}
+        dimensions = {'x_coord_size': str(self.meta.x_coord_size),
+                      'y_coord_size': str(self.meta.y_coord_size)}
         data['tables'][self._image_table_name]['cf']['cq'] = dimensions
 
         thumb_structure = self._build_image_data_structure(downsample=300)
@@ -103,8 +103,8 @@ class Standard(object):
         self._dataset = value
 
     @property
-    def metadata(self):
-        return self._metadata
+    def meta(self):
+        return self._meta
 
     @property
     def image(self):
@@ -140,21 +140,30 @@ class Standard(object):
         """
         log.info('Building ingest metadata component ...')
 
-        self.metadata.extract_meta(self.dataset)
+        self.meta.extract_meta(self.dataset)
 
         data = {}
-        data['cq'] = {'file': self.metadata.file,
-                      'x_coord_size': str(self.metadata.x_coord_size),
-                      'y_coord_size': str(self.metadata.y_coord_size),
-                      'geogcs': self.metadata.geogcs}
+        data['cq'] = {'file': self.meta.file,
+                      'x_coord_size': str(self.meta.x_coord_size),
+                      'y_coord_size': str(self.meta.y_coord_size),
+                      'geogcs': self.meta.geogcs}
 
         count = 0
-        for geoxform in self._metadata.geoxform:
+        for geoxform in self.meta.geoxform:
             data['cq']['geoxform=%d' % count] = repr(geoxform)
             count += 1
 
-        for meta_key in self._metadata.metadata:
-            meta_value = self._metadata.metadata[meta_key]
+        count = 0
+        raw_image_boundaries = self.meta.calculate_extents()
+        image_boundaries = self.meta.reproject_coords(raw_image_boundaries)
+        for image_boundary in sorted(image_boundaries):
+            data['cq']['coord=%d' % count] = ('%s,%s' %
+                                              (image_boundary[1],
+                                               image_boundary[0]))
+            count += 1
+
+        for meta_key in self.meta.metadata:
+            meta_value = self.meta.metadata[meta_key]
             data['cq']['metadata=%s' % meta_key] = meta_value
 
         log.info('Ingest metadata structure build done')

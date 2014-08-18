@@ -154,7 +154,7 @@ class TestDatastore(unittest2.TestCase):
         received = self._ds.query_metadata(table=self._meta_table_name,
                                            key='i_3001a',
                                            display=False)
-        expected = 73
+        expected = 77
         msg = 'Scan across table should return cells'
         self.assertEqual(received, expected, msg)
 

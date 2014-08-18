@@ -18,6 +18,10 @@ class TestMetadata(unittest2.TestCase):
                                  'tests',
                                  'files',
                                  'i_3001a.ntf')
+        cls._file_no_geogcs = os.path.join('geoutils',
+                                           'tests',
+                                           'files',
+                                           'i_6130e.ntf')
 
     @classmethod
     def setUp(cls):
@@ -93,13 +97,31 @@ class TestMetadata(unittest2.TestCase):
         """
         nitf = geoutils.NITF(source_filename=self._file)
         nitf.open()
-        nitf.metadata.extract_meta(nitf.dataset)
-        received = nitf.metadata.calculate_extents()
+        nitf.meta.extract_meta(nitf.dataset)
+        received = nitf.meta.calculate_extents()
         expected = [[84.999999864233729, 32.983333469099598],
                     [84.999999864233729, 32.983055419789295],
                     [85.000277913544039, 32.983055419789295],
                     [85.000277913544039, 32.983333469099598]]
         msg = 'Extent calculation error'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        nitf = None
+        del nitf
+
+    def test_calculate_extents_missing_geogcs(self):
+        """Verify the x_coord_size attribute: missing GEOGCS.
+        """
+        nitf = geoutils.NITF(source_filename=self._file_no_geogcs)
+        nitf.open()
+        nitf.meta.extract_meta(nitf.dataset)
+        received = nitf.meta.calculate_extents()
+        expected = [[0.0, 0.0],
+                    [0.0, 1280.0],
+                    [1152.0, 1280.0],
+                    [1152.0, 0.0]]
+        msg = 'Extent calculation error: missing GEOGCS'
         self.assertListEqual(received, expected, msg)
 
         # Clean up.
@@ -124,6 +146,19 @@ class TestMetadata(unittest2.TestCase):
                     [85.000277913544039, 32.983055419789295],
                     [85.000277913544039, 32.983333469099598]]
         msg = 'X-Y coord re-projection error'
+        self.assertListEqual(received, expected, msg)
+
+    def test_reproject_coords_missing_geogcs(self):
+        """Reproject a set of X-Y coordinates: missing GEOGCS.
+        """
+        xy_coords = [[0.0, 0.0],
+                     [0.0, 1280.0],
+                     [1152.0, 1280.0],
+                     [1152.0, 0.0]]
+
+        received = self._meta.reproject_coords(extents=xy_coords)
+        expected = []
+        msg = 'X-Y coord re-projection error: missing GEOGCS'
         self.assertListEqual(received, expected, msg)
 
     @classmethod
