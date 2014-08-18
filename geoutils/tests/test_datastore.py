@@ -161,6 +161,42 @@ class TestDatastore(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
+    def test_scan_coords(self):
+        """Scan the metadata datastore table.
+        """
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+
+        from geoutils.tests.files.ingest_data_01 import DATA
+        self._ds.ingest(DATA)
+
+        received = self._ds.query_coords(table=self._meta_table_name,
+                                         display=False)
+        expected = 4
+        msg = 'Image coordinates scan should return 4 cells'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_scan_coords_missing_geogcs(self):
+        """Scan the metadata datastore table: missing GEOGCS.
+        """
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+
+        from geoutils.tests.files.ingest_data_02 import DATA
+        self._ds.ingest(DATA)
+
+        received = self._ds.query_coords(table=self._meta_table_name,
+                                         display=False)
+        expected = 0
+        msg = 'Image coordinates scan should return 0 cells: no GEOGCS'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
     def test_query_image(self):
         """Attempt to query the image component from the datastore.
         """

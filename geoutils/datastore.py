@@ -43,12 +43,17 @@ class Datastore(object):
         Password credential of the Accumulo proxy host connection
         (defaults to the empty string)
 
+    .. attribute:: *coord_cols*
+        List of family column names to extract during the
+        metadata table scan for the image coordinate boundaries
+
     """
     _connection = None
     _host = 'localhost'
     _port = 42425
     _user = 'root'
     _password = ''
+    _coord_cols = [['coord=0'], ['coord=1'], ['coord=2'], ['coord=3']]
 
     @property
     def connection(self):
@@ -90,6 +95,16 @@ class Datastore(object):
     def password(self, value):
         self._password = value
 
+    @property
+    def coord_cols(self):
+        return self._coord_cols
+
+    @coord_cols.setter
+    def coord_cols(self, value):
+        del self._coord_cols[:]
+        self._coord_cols = []
+        self._coord_cols = value
+
     def __del__(self):
         self.close()
 
@@ -99,7 +114,7 @@ class Datastore(object):
         if self.connection is None:
             log.error('Writer error: Accumulo connection not detected.')
         else:
-            log.debug('Creating writer for table "%s"' %table)
+            log.debug('Creating writer for table "%s"' % table)
             writer = self.connection.create_batch_writer(table)
 
         return writer
@@ -244,7 +259,7 @@ class Datastore(object):
                     mutation.put(cf=key, val=val)
             log.debug('family|value ingest component done')
 
-    def query_metadata(self, table, key, display=True):
+    def query_metadata(self, table, key=None, display=True):
         """Query the metadata component from the datastore.
 
         **Args:**
@@ -273,17 +288,59 @@ class Datastore(object):
 
         return results_count
 
-    def query(self, table, key):
+    def query_coords(self, table, display=True):
+        """Scan the metadata table *table* for all family columns
+        that match :attr:`geoutils.Datastore.coord_cols`.  Typcially
+        the family columns are of the form ``coord=?``.
+
+        **Args:**
+            *table*: the Accumulo datastore's table to scan
+
+            *key*: at this time, *key* relates to the NITF file name
+            (less the ``.ntf`` extension) that is used in the current
+            schema as the Row ID component of the row key.
+
+        **Kwargs:**
+            *display*: write the results to STDOUT (default ``True``)
+
+        **Returns:**
+            the metadata component of *key*
+
+        """
+        log.debug('Scanning for image boundary coordinates ...')
+        results = self.query(table=table, cols=self.coord_cols)
+
+        results_count = 0
+        for cell in results:
+            results_count += 1
+            if display:
+                print(cell)
+
+        log.info('Image boundary coordinates scan complete')
+
+        return results_count
+
+    def query(self, table, key=None, cols=None):
         """TODO
 
         """
-        log.info('Querying datastore table "%s" against key: "%s" ...' %
-                 (table, key))
+        if cols is None:
+            cols = []
 
-        scan_range = pyaccumulo.Range(srow=key, erow=key)
-        results = self.connection.scan(table=table,
-                                       scanrange=scan_range,
-                                       cols=[])
+        scan_range = None
+        if key is None:
+            log.info('Table "%s" scan ...' % table)
+            scan_range = pyaccumulo.Range(srow=key, erow=key)
+        else:
+            log.info('Querying table "%s" against key: "%s" ...' %
+                     (table, key))
+
+        if scan_range is not None:
+            results = self.connection.scan(table=table,
+                                           scanrange=scan_range,
+                                           cols=cols)
+        else:
+            results = self.connection.scan(table=table, cols=cols)
 
         return results
 
