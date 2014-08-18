@@ -6,6 +6,7 @@ and an image.  This class focuses on the metadata.
 """
 __all__ = ["Metadata"]
 
+from osgeo import osr
 import os
 
 from oct.utils.log import log
@@ -42,7 +43,14 @@ class Metadata(object):
         Returns a 6-item tuple that represents the affine transformation
         coefficients.  The coefficients can be used for transforming
         between pixel/line (P,L) raster space, and projection coordinates
-        (Xp,Yp) space
+        (Xp,Yp) space.  The items in the tuple represent:
+
+        * geoxform[0]: Top left X
+        * geoxform[1]: West-east pixel resolution
+        * geoxform[2]: Rotation (0 if image is "north up"
+        * geoxform[3]: Top left Y
+        * geoxform[4]: Rotation (0 if image is "north up")
+        * geoxform[5]: North-south pixel resolution
 
     .. metadata::
         Dictionary of key/value pairs that provide details about the
@@ -158,3 +166,94 @@ class Metadata(object):
             status = True
 
         return status
+
+    def calculate_extents(self):
+        """Calculate the corner coordinates from a geotransform.
+
+        **Returns:**
+            4 x 2 dimensional list of coordinates taken from the
+            :attr:`geoutils.Metadata.geoxform` attribute that represent
+            the corner boundaries of a geographic image
+
+        """
+        log.debug('Calculating corner coordinates from geotransform: %s' %
+                   str(self.geoxform))
+        extents = []
+        x_points = [0, self.x_coord_size]
+        y_points = [0, self.y_coord_size]
+        log.debug('Image (X, Y) size: (%d, %d)' % (self.x_coord_size,
+                                                   self.y_coord_size))
+
+        for x_point in x_points:
+            for y_point in y_points:
+                corner_x = (self.geoxform[0] +
+                            (x_point * self.geoxform[1]) +
+                            (y_point * self.geoxform[2]))
+
+                corner_y = (self.geoxform[3] +
+                            (x_point * self.geoxform[4]) +
+                            (y_point * self.geoxform[5]))
+
+                extents.append([corner_x, corner_y])
+                log.debug('(X, Y) extents: (%.16f, %.16f)' %
+                          (corner_x, corner_y))
+
+            y_points.reverse()
+
+        return extents
+
+    def reproject_coords(self, extents):
+        """Reproject a list of X, Y coordinates provided by *extents*.
+        Typically, *extents* will be a list of 4 XY coordinates
+        (themselves a 2-element list construct) similar to the following::
+
+        >>> import pprint
+        >>> pprint.pprint(extents)
+        [[84.999999864233729, 32.983333469099598],
+         [84.999999864233729, 32.983055419789295],
+         [85.000277913544039, 32.983055419789295],
+         [85.000277913544039, 32.983333469099598]]
+
+        This method will only be useful if we need to re-project the
+        coordinates from one projection to another.  For example, UTM to
+        WGS 84.  However, currently we are only supporting the
+        World Geodetic System Geographic Coordinate System (aka WGS 84,
+        WGS 1984, EPSG:4326).  As such, this method in its current
+        form is a simple WGS 84 validator.
+
+        **Args:**
+            *extents*: 4 x 2 dimensional list of XY coordinates that
+            represent the corner boundaries of a geogrpahic image
+
+        **Returns:**
+            4 x 2 dimensional list of WGS 84-based coordinates
+            that represent the corner boundaries of a geographic image
+
+        """
+        log.debug('Projection: "%s"' % self.geogcs)
+
+        # Get some info about the source Spatial Reference System.
+        spatial_ref_sys = osr.SpatialReference(wkt=self.geogcs)
+        log.debug('Source SRS IsProjected?: %s' %
+                  (spatial_ref_sys.IsProjected() == 1))
+        geogcs = spatial_ref_sys.GetAttrValue('geogcs')
+        log.debug('Geographic coordinate system: %s' % geogcs)
+
+        trans_coords = []
+        if spatial_ref_sys.GetAttrValue('geogcs') != 'WGS 84':
+            log.error('Unsupported GEOGCS "%s": skipped re-projection' %
+                      geogcs)
+        else:
+            trans_coords = extents
+
+            # Stub this out until we need it.
+#        target_spatial_ref_system = spatial_ref_system.CloneGeogCS()
+#        transform = osr.CoordinateTransformation(src_srs, tgt_srs)
+#        for x_coord, y_coord in extents:
+#            x_coord, y_coord, z_coord = transform.TransformPoint(x_coord,
+#                                                                 y_coord)
+#            trans_coords.append([x_coord, y_coord])
+
+        log.debug('Re-projected coords: "%s"' % trans_coords)
+
+        return trans_coords

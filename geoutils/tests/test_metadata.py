@@ -84,13 +84,52 @@ class TestMetadata(unittest2.TestCase):
         msg = 'GeoTransform error'
         self.assertListEqual(received, expected, msg)
 
+        # Clean up.
         nitf = None
         del nitf
 
+    def test_calculate_extents(self):
+        """Verify the x_coord_size attribute.
+        """
+        nitf = geoutils.NITF(source_filename=self._file)
+        nitf.open()
+        nitf.metadata.extract_meta(nitf.dataset)
+        received = nitf.metadata.calculate_extents()
+        expected = [[84.999999864233729, 32.983333469099598],
+                    [84.999999864233729, 32.983055419789295],
+                    [85.000277913544039, 32.983055419789295],
+                    [85.000277913544039, 32.983333469099598]]
+        msg = 'Extent calculation error'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        nitf = None
+        del nitf
+
+    def test_reproject_coords(self):
+        """Reproject a set of X-Y coordinates.
+        """
+        xy_coords = [[84.999999864233729, 32.983333469099598],
+                     [84.999999864233729, 32.983055419789295],
+                     [85.000277913544039, 32.983055419789295],
+                     [85.000277913544039, 32.983333469099598]]
+
+        from geoutils.tests.files.ingest_data_01 import DATA
+        geogcs = DATA['tables']['meta_test']['cf']['cq']['geogcs']
+        self._meta.geogcs = geogcs
+
+        received = self._meta.reproject_coords(extents=xy_coords)
+        expected = [[84.999999864233729, 32.983333469099598],
+                    [84.999999864233729, 32.983055419789295],
+                    [85.000277913544039, 32.983055419789295],
+                    [85.000277913544039, 32.983333469099598]]
+        msg = 'X-Y coord re-projection error'
+        self.assertListEqual(received, expected, msg)
+
     @classmethod
     def tearDown(cls):
-        cls._nitf = None
-        del cls._nitf
+        cls._meta = None
+        del cls._meta
 
     @classmethod
     def tearDownClass(cls):
