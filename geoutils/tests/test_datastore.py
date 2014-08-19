@@ -171,9 +171,9 @@ class TestDatastore(unittest2.TestCase):
         self._ds.ingest(DATA)
 
         received = self._ds.query_coords(table=self._meta_table_name,
-                                         display=False)
-        expected = 4
-        msg = 'Image coordinates scan should return 4 cells'
+                                         jsonify=True)
+        expected = '[[["32.9830554198,84.9999998642"], ["32.9830554198,85.0002779135"], ["32.9833334691,84.9999998642"], ["32.9833334691,85.0002779135"]]]'
+        msg = 'Image coordinates scan should return results'
         self.assertEqual(received, expected, msg)
 
         # Clean up.
@@ -189,10 +189,10 @@ class TestDatastore(unittest2.TestCase):
         self._ds.ingest(DATA)
 
         received = self._ds.query_coords(table=self._meta_table_name,
-                                         display=False)
-        expected = 0
-        msg = 'Image coordinates scan should return 0 cells: no GEOGCS'
-        self.assertEqual(received, expected, msg)
+                                         jsonify=False)
+        expected = []
+        msg = 'Image coordinates scan should return no results: no GEOGCS'
+        self.assertListEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_table_name)

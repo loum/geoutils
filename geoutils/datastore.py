@@ -5,6 +5,7 @@
 __all__ = ["Datastore"]
 
 import Image
+import json
 
 import pyaccumulo
 from thrift.transport.TTransport import TTransportException
@@ -288,7 +289,7 @@ class Datastore(object):
 
         return results_count
 
-    def query_coords(self, table, display=True):
+    def query_coords(self, table, jsonify=False):
         """Scan the metadata table *table* for all family columns
         that match :attr:`geoutils.Datastore.coord_cols`.  Typcially
         the family columns are of the form ``coord=?``.
@@ -301,7 +302,7 @@ class Datastore(object):
             schema as the Row ID component of the row key.
 
         **Kwargs:**
-            *display*: write the results to STDOUT (default ``True``)
+            *jsonify*: return as a JSON string
 
         **Returns:**
             the metadata component of *key*
@@ -310,15 +311,25 @@ class Datastore(object):
         log.debug('Scanning for image boundary coordinates ...')
         results = self.query(table=table, cols=self.coord_cols)
 
-        results_count = 0
+        coords = {}
         for cell in results:
-            results_count += 1
-            if display:
-                print(cell)
+            if coords.get(cell.row) is not None:
+                coords[cell.row].append([cell.cq])
+            else:
+                coords[cell.row] = []
+                coords[cell.row].append([cell.cq])
 
         log.info('Image boundary coordinates scan complete')
 
-        return results_count
+        coords_list = []
+        for coord in coords.values():
+            coord.sort()
+            coords_list.append(coord)
+
+        if jsonify:
+            coords_list = json.dumps(coords_list)
+
+        return coords_list
 
     def query(self, table, key=None, cols=None):
         """TODO
