@@ -137,7 +137,7 @@ class TestMetadata(unittest2.TestCase):
                      [85.000277913544039, 32.983333469099598]]
 
         from geoutils.tests.files.ingest_data_01 import DATA
-        geogcs = DATA['tables']['meta_test']['cf']['cq']['geogcs']
+        geogcs = DATA['tables']['meta_library']['cf']['cq']['geogcs']
         self._meta.geogcs = geogcs
 
         received = self._meta.reproject_coords(extents=xy_coords)

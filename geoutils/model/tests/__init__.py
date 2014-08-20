@@ -1,0 +1,3 @@
+from test_metadata import TestModelMetadata
+from test_image import TestModelImage
+from test_thumb import TestModelThumb

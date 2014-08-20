@@ -1,7 +1,7 @@
-.. Image
+.. GeoImage
 
 .. toctree::
     :maxdepth: 2
 
-Image
-=====
+GeoImage
+=======

@@ -9,7 +9,7 @@
 DATA = {
     'row_id': 'i_6130e',
     'tables': {
-        'meta_test': {
+        'meta_library': {
             'cf': {
                 'cq': {
                     'file': 'i_6130e.ntf',

@@ -1,7 +1,7 @@
 PY=/usr/bin/python
 NOSE=/usr/bin/nosetests1.1 -s -v --with-xunit
 GIT=/usr/bin/git
-PYTHONPATH=.
+PYTHONPATH=.:../geolib-mock
 
 # The TEST variable can be set to allow you to control which tests
 # to run.  For example, if the current project has a test set defined at
@@ -20,7 +20,10 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.tests:TestMetadata \
 	geoutils.tests:TestGeoImage \
 	geoutils.tests:TestDatastore \
-	geoutils.tests:TestMockServer
+	geoutils.tests:TestModelBase \
+	geoutils.model.tests:TestModelMetadata \
+	geoutils.model.tests:TestModelImage \
+	geoutils.model.tests:TestModelThumb
 
 sdist:
 	$(PY) setup.py sdist
@@ -34,7 +37,7 @@ docs:
 build: docs rpm
 
 test:
-	$(NOSE) $(TEST)
+	 PYTHONPATH=$(PYTHONPATH) $(NOSE) $(TEST)
 
 uninstall:
 	$(RPM) -e python-geoutils

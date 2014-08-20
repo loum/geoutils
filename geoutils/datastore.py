@@ -15,7 +15,7 @@ from oct.utils.log import log
 
 
 class Datastore(object):
-    """:class:`geoutils.Metadata`
+    """:class:`geoutils.Datastore`
 
     .. note::
 
@@ -121,7 +121,7 @@ class Datastore(object):
         return writer
 
     def connect(self):
-        """Connect to the Accumulo datastore.
+        """Connect to the Accumulo datastore via a proxy client.
 
         Will use the :attr:`geoutils.Datastore.user`,
         :attr:`geoutils.Datastore.password`,
@@ -206,9 +206,9 @@ class Datastore(object):
 
         """
         if self.connection is not None:
-            log.info('Closing datastore connection ...')
+            log.info('Closing proxy client connection ...')
             self.connection.close()
-            log.info('Datastore connection closed.')
+            log.info('Proxy client connection closed')
 
     def ingest(self, data):
         """TODO
@@ -295,11 +295,7 @@ class Datastore(object):
         the family columns are of the form ``coord=?``.
 
         **Args:**
-            *table*: the Accumulo datastore's table to scan
-
-            *key*: at this time, *key* relates to the NITF file name
-            (less the ``.ntf`` extension) that is used in the current
-            schema as the Row ID component of the row key.
+            *table*: override the Accumulo datastore's table to scan
 
         **Kwargs:**
             *jsonify*: return as a JSON string

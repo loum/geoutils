@@ -8,6 +8,7 @@ import tempfile
 import hashlib
 
 import geoutils
+import geolib_mock
 
 
 class TestDatastore(unittest2.TestCase):
@@ -21,12 +22,12 @@ class TestDatastore(unittest2.TestCase):
                             'tests',
                             'files',
                             'proxy.properties')
-        cls._mock = geoutils.MockServer(conf)
+        cls._mock = geolib_mock.MockServer(conf)
         cls._mock.start()
 
-        cls._meta_table_name = 'meta_test'
-        cls._image_table_name = 'image_test'
-        cls._thumb_table_name = 'thumb_test'
+        cls._meta_table_name = 'meta_library'
+        cls._image_table_name = 'image_library'
+        cls._thumb_table_name = 'thumb_library'
 
     @classmethod
     def setUp(cls):
@@ -172,7 +173,12 @@ class TestDatastore(unittest2.TestCase):
 
         received = self._ds.query_coords(table=self._meta_table_name,
                                          jsonify=True)
-        expected = '[[["32.9830554198,84.9999998642"], ["32.9830554198,85.0002779135"], ["32.9833334691,84.9999998642"], ["32.9833334691,85.0002779135"]]]'
+        results_file = os.path.join('geoutils',
+                                    'tests',
+                                    'results',
+                                    'coords01.txt')
+        results_fh = open(results_file)
+        expected = results_fh.readline().rstrip()
         msg = 'Image coordinates scan should return results'
         self.assertEqual(received, expected, msg)
 

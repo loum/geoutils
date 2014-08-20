@@ -66,10 +66,10 @@ FILES = find_data_files('doc/build/',
 
 setup(name='python-geoutils',
       version=VERSION,
-      description='Toll Outlet Portal Middleware',
+      description='GeoUtils',
       author='Lou Markovski',
-      author_email='lou.markovski@tollgroup.com',
-      url='https://nparcel.tollgroup.com',
+      author_email='lou.markovski@gmail.com',
+      url='',
       packages=['geoutils'],
       package_dir={'geoutils': 'geoutils'},
       data_files=FILES)

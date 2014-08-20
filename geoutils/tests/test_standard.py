@@ -60,7 +60,7 @@ class TestStandard(unittest2.TestCase):
         received = self._standard._build_meta_data_structure()
 
         from geoutils.tests.files.ingest_data_01 import DATA
-        expected = DATA['tables']['meta_test']['cf']
+        expected = DATA['tables']['meta_library']['cf']
         msg = 'Metadata data structure result error'
         self.assertDictEqual(received, expected, msg)
 
@@ -73,7 +73,7 @@ class TestStandard(unittest2.TestCase):
         received = self._standard._build_meta_data_structure()
 
         from geoutils.tests.files.ingest_data_02 import DATA
-        expected = DATA['tables']['meta_test']['cf']
+        expected = DATA['tables']['meta_library']['cf']
         msg = 'Metadata data structure result error'
         self.assertDictEqual(received, expected, msg)
 

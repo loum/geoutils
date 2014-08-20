@@ -5,7 +5,7 @@
 DATA = {
     'row_id': 'i_3001a',
     'tables': {
-        'meta_test': {
+        'meta_library': {
             'cf': {
                 'cq': {
                     'coord=0': '32.9830554198,84.9999998642',
