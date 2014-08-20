@@ -301,21 +301,32 @@ class Datastore(object):
             *jsonify*: return as a JSON string
 
         **Returns:**
-            the metadata component of *key*
+            a list of 4 sets of (lists) of decimcal lat/long values that
+            represent the boundary coordinates of the image.  List
+            construct is similar to the following::
+
+            [
+                [
+                    [32.983055419800003, 84.999999864200007],
+                    [32.983055419800003, 85.0002779135],
+                    [32.983333469100003, 84.999999864200007],
+                    [32.983333469100003, 85.0002779135]
+                ]
+            ]
 
         """
         log.debug('Scanning for image boundary coordinates ...')
+
         results = self.query(table=table, cols=self.coord_cols)
 
         coords = {}
         for cell in results:
+            (lat, lng) = cell.cq.split(',')
             if coords.get(cell.row) is not None:
-                coords[cell.row].append([cell.cq])
+                coords[cell.row].append([float(lat), float(lng)])
             else:
                 coords[cell.row] = []
-                coords[cell.row].append([cell.cq])
-
-        log.info('Image boundary coordinates scan complete')
+                coords[cell.row].append([float(lat), float(lng)])
 
         coords_list = []
         for coord in coords.values():
@@ -324,6 +335,8 @@ class Datastore(object):
 
         if jsonify:
             coords_list = json.dumps(coords_list)
+
+        log.info('Image boundary coordinates scan complete')
 
         return coords_list
 

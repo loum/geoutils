@@ -162,7 +162,7 @@ class TestDatastore(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
-    def test_scan_coords(self):
+    def test_query_coords(self):
         """Scan the metadata datastore table.
         """
         self._ds.connect()
@@ -185,7 +185,7 @@ class TestDatastore(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
-    def test_scan_coords_missing_geogcs(self):
+    def test_query_coords_missing_geogcs(self):
         """Scan the metadata datastore table: missing GEOGCS.
         """
         self._ds.connect()
