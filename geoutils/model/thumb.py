@@ -42,7 +42,6 @@ class Thumb(geoutils.ModelBase):
 
         image_fh = tempfile.NamedTemporaryFile('w+b')
         x_coord = y_coord = None
-        image = None
         for cell in cells:
             if cell.cf == 'x_coord_size':
                 x_coord = cell.cq
@@ -52,7 +51,6 @@ class Thumb(geoutils.ModelBase):
                 image_fh.write(cell.val)
 
         log.debug('X|Y: %s|%s' % (x_coord, y_coord))
-        log.debug('image: %s' % image)
         dimensions = (int(x_coord), int(y_coord))
 
         suffix = 'jpg'
@@ -62,6 +60,7 @@ class Thumb(geoutils.ModelBase):
         temp_obj = tempfile.NamedTemporaryFile(mode='w+b',
                                                suffix=suffix)
         image_fh.seek(0)
+        log.debug('Reconstructing image to format "%s"' % img_format)
         geoutils.GeoImage.reconstruct_image(image_fh.read,
                                             dimensions).save(temp_obj,
                                                              img_format)

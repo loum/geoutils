@@ -80,6 +80,42 @@ class TestModelImage(unittest2.TestCase):
         image_fh.close()
         self._ds.delete_table(self._image_table_name)
 
+    def test_query_image_png(self):
+        """Attempt to query the image component from the datastore: PNG
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         'image_stream.out')
+        image_fh = open(image_stream_file, 'rb')
+
+        data = {'row_id': 'i_3001a'}
+        data['tables'] = {self._image_table_name: {
+                          'cf': {
+                              'cq': {
+                                  'x_coord_size': '1024',
+                                  'y_coord_size': '1024'},
+                              'val': {
+                                  'image': image_fh.read}}}}
+
+        self._ds.init_table(self._image_table_name)
+        self._ds.ingest(data)
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'results',
+                                     'i_3001a_1024x1024.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        image_jpg_stream = self._image.query_image(key='i_3001a',
+                                                   img_format='PNG')
+        received = hashlib.md5(image_jpg_stream.read()).hexdigest()
+        msg = 'Ingested image stream differs from query result'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        image_fh.close()
+        self._ds.delete_table(self._image_table_name)
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)

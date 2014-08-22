@@ -80,6 +80,42 @@ class TestModelThumb(unittest2.TestCase):
         thumb_fh.close()
         self._ds.delete_table(self._thumb_table_name)
 
+    def test_query_thumb_png(self):
+        """Attempt to query the thumb component from the datastore.
+        """
+        thumb_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
+        thumb_fh = open(thumb_stream_file, 'rb')
+
+        data = {'row_id': 'i_3001a'}
+        data['tables'] = {self._thumb_table_name: {
+                          'cf': {
+                              'cq': {
+                                  'x_coord_size': '300',
+                                  'y_coord_size': '300'},
+                              'val': {
+                                  'thumb': thumb_fh.read}}}}
+
+        self._ds.init_table(self._thumb_table_name)
+        self._ds.ingest(data)
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'results',
+                                     'i_3001a_300x300.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        image_stream = self._thumb.query_thumb(key='i_3001a',
+                                               img_format='PNG')
+        received = hashlib.md5(image_stream.read()).hexdigest()
+        msg = 'Ingested thumb stream differs from query result'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        thumb_fh.close()
+        self._ds.delete_table(self._thumb_table_name)
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)

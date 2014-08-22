@@ -65,7 +65,8 @@ class Standard(object):
                       'y_coord_size': str(self.meta.y_coord_size)}
         data['tables'][self._image_model.name]['cf']['cq'] = dimensions
 
-        thumb_structure = self._build_image_data_structure(downsample=300)
+        thumb_structure = self._build_image_data_structure(downsample=300,
+                                                           thumb=True)
         data['tables'][self._thumb_model.name] = {'cf': thumb_structure}
         thumb_dimensions = {'x_coord_size': '300',
                             'y_coord_size': '300'}
@@ -135,7 +136,7 @@ class Standard(object):
 
         return data
 
-    def _build_image_data_structure(self, downsample=None):
+    def _build_image_data_structure(self, downsample=None, thumb=False):
         """TODO
 
         """
@@ -146,8 +147,11 @@ class Standard(object):
 
         data = {}
 
-        data['val'] = {'image': self.image.extract_image(self.dataset,
-                                                         downsample)}
+        key = 'image'
+        if thumb:
+            key = 'thumb'
+        data['val'] = {key: self.image.extract_image(self.dataset,
+                                                     downsample)}
 
         log.info('Ingest image structure build done')
 
