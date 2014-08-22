@@ -70,6 +70,7 @@ setup(name='python-geoutils',
       author='Lou Markovski',
       author_email='lou.markovski@gmail.com',
       url='',
-      packages=['geoutils'],
+      packages=['geoutils',
+                'geoutils.model'],
       package_dir={'geoutils': 'geoutils'},
       data_files=FILES)

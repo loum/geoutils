@@ -4,13 +4,11 @@
 """
 __all__ = ["Datastore"]
 
-import Image
-import json
-
 import pyaccumulo
 from thrift.transport.TTransport import TTransportException
 from pyaccumulo.proxy.AccumuloProxy import AccumuloSecurityException
 
+import geoutils.model
 from oct.utils.log import log
 
 
@@ -48,13 +46,18 @@ class Datastore(object):
         List of family column names to extract during the
         metadata table scan for the image coordinate boundaries
 
+    .. attribute:: *base*
+        an object instance of a :class:`geoutils.model.Base`
+
     """
     _connection = None
     _host = 'localhost'
     _port = 42425
     _user = 'root'
     _password = ''
-    _coord_cols = [['coord=0'], ['coord=1'], ['coord=2'], ['coord=3']]
+    _meta = geoutils.model.Metadata(None)
+    _image = geoutils.model.Image(None)
+    _thumb = geoutils.model.Thumb(None)
 
     @property
     def connection(self):
@@ -97,14 +100,16 @@ class Datastore(object):
         self._password = value
 
     @property
-    def coord_cols(self):
-        return self._coord_cols
+    def meta(self):
+        return self._meta
 
-    @coord_cols.setter
-    def coord_cols(self, value):
-        del self._coord_cols[:]
-        self._coord_cols = []
-        self._coord_cols = value
+    @property
+    def image(self):
+        return self._image
+
+    @property
+    def thumb(self):
+        return self._thumb
 
     def __del__(self):
         self.close()
@@ -143,9 +148,14 @@ class Datastore(object):
                                                   port=self.port,
                                                   user=self.user,
                                                   password=self.password)
+            self.meta.connection = self.connection
+            self.image.connection = self.connection
+            self.thumb.connection = self.connection
         except (TTransportException,
                 AccumuloSecurityException) as err:
             log.error('Connection error: "%s"' % err)
+
+        return self.connection
 
     def init_table(self, name):
         """Initialise the datastore table.
@@ -259,150 +269,3 @@ class Datastore(object):
                 else:
                     mutation.put(cf=key, val=val)
             log.debug('family|value ingest component done')
-
-    def query_metadata(self, table, key=None, display=True):
-        """Query the metadata component from the datastore.
-
-        **Args:**
-            *table*: TODO
-
-            *key*: at this time, *key* relates to the NITF file name
-            (less the ``.ntf`` extension) that is used in the current
-            schema as the Row ID component of the row key.
-
-        **Kwargs:**
-            *display*: write the results to STDOUT (default ``True``)
-
-        **Returns:**
-            the metadata component of *key*
-
-        """
-        results = self.query(table=table, key=key)
-
-        results_count = 0
-        for cell in results:
-            results_count += 1
-            if display:
-                print(cell)
-
-        log.info('Query key "%s" complete' % key)
-
-        return results_count
-
-    def query_coords(self, table, jsonify=False):
-        """Scan the metadata table *table* for all family columns
-        that match :attr:`geoutils.Datastore.coord_cols`.  Typcially
-        the family columns are of the form ``coord=?``.
-
-        **Args:**
-            *table*: override the Accumulo datastore's table to scan
-
-        **Kwargs:**
-            *jsonify*: return as a JSON string
-
-        **Returns:**
-            a list of 4 sets of (lists) of decimcal lat/long values that
-            represent the boundary coordinates of the image.  List
-            construct is similar to the following::
-
-            [
-                [
-                    [32.983055419800003, 84.999999864200007],
-                    [32.983055419800003, 85.0002779135],
-                    [32.983333469100003, 84.999999864200007],
-                    [32.983333469100003, 85.0002779135]
-                ]
-            ]
-
-        """
-        log.debug('Scanning for image boundary coordinates ...')
-
-        results = self.query(table=table, cols=self.coord_cols)
-
-        coords = {}
-        for cell in results:
-            (lat, lng) = cell.cq.split(',')
-            if coords.get(cell.row) is not None:
-                coords[cell.row].append([float(lat), float(lng)])
-            else:
-                coords[cell.row] = []
-                coords[cell.row].append([float(lat), float(lng)])
-
-        coords_list = []
-        for coord in coords.values():
-            coord.sort()
-            coords_list.append(coord)
-
-        if jsonify:
-            coords_list = json.dumps(coords_list)
-
-        log.info('Image boundary coordinates scan complete')
-
-        return coords_list
-
-    def query(self, table, key=None, cols=None):
-        """TODO
-
-        """
-        if cols is None:
-            cols = []
-
-        scan_range = None
-        if key is None:
-            log.info('Table "%s" scan ...' % table)
-            scan_range = pyaccumulo.Range(srow=key, erow=key)
-        else:
-            log.info('Querying table "%s" against key: "%s" ...' %
-                     (table, key))
-
-        if scan_range is not None:
-            results = self.connection.scan(table=table,
-                                           scanrange=scan_range,
-                                           cols=cols)
-        else:
-            results = self.connection.scan(table=table, cols=cols)
-
-        return results
-
-    def query_image(self, table, key):
-        """Query the metadata component from the datastore.
-
-        **Args:**
-            *table*: TODO
-
-            *key*: at this time, *key* relates to the NITF file name
-            (less the ``.ntf`` extension) that is used in the current
-            schema as the Row ID component of the row key.
-
-        **Returns:**
-            the image component of *key*
-
-        """
-        return self.query(table, key)
-
-    def reconstruct_image(self, image_stream, dimensions):
-        """Reconstruct a 1D stream to an image file.
-
-        **Args:**
-            *image_stream*: ``string`` type stream of raw binary
-            floating point data that is a 1D representation of an
-            image file.  This is typically the format that is stored
-            in the Accumulo image library
-
-            *dimensions*: tuple structure that represents the rows
-            and columns of the 1D image.  This information is used
-            to recreate the original 2D structure of the image
-
-        **Returns:**
-            A :mod:`Image` image in memory from pixel data provided
-            by the *image_stream*
-
-        """
-        log.debug('Reconstructing image with dimensions "%s"' %
-                  str(dimensions))
-
-        return Image.frombuffer('L',
-                                dimensions,
-                                image_stream(),
-                                'raw',
-                                'L', 0, 1)

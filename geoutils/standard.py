@@ -25,9 +25,9 @@ class Standard(object):
     _dataset = None
     _meta = geoutils.Metadata()
     _image = geoutils.GeoImage()
-    _meta_model = geoutils.model.Metadata()
-    _image_model = geoutils.model.Image()
-    _thumb_model = geoutils.model.Thumb()
+    _meta_model = geoutils.model.Metadata(None)
+    _image_model = geoutils.model.Image(None)
+    _thumb_model = geoutils.model.Thumb(None)
 
     def __init__(self, source_filename=None):
         self._filename = source_filename

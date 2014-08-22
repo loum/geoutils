@@ -6,6 +6,8 @@ and an image.  This class focuses on the image.
 """
 __all__ = ["GeoImage"]
 
+import Image
+
 from oct.utils.log import log
 
 
@@ -113,3 +115,31 @@ class GeoImage(object):
             log.debug('New (X, Y) scale: (%d, %d)' % (x_scale, y_scale))
 
         return (x_scale, y_scale)
+
+    @staticmethod
+    def reconstruct_image(image_stream, dimensions):
+        """Reconstruct a 1D stream to an image file.
+
+        **Args:**
+            *image_stream*: ``string`` type stream of raw binary
+            floating point data that is a 1D representation of an
+            image file.  This is typically the format that is stored
+            in the Accumulo image library
+
+            *dimensions*: tuple structure that represents the rows
+            and columns of the 1D image.  This information is used
+            to recreate the original 2D structure of the image
+
+        **Returns:**
+            A :mod:`Image` image in memory from pixel data provided
+            by the *image_stream*
+
+        """
+        log.debug('Reconstructing image with dimensions "%s"' %
+                  str(dimensions))
+
+        return Image.frombuffer('L',
+                                dimensions,
+                                image_stream(),
+                                'raw',
+                                'L', 0, 1)

@@ -5,17 +5,114 @@ table schema.
 """
 __all__ = ["Metadata"]
 
+import json
+
 import geoutils
+from oct.utils.log import log
 
 
 class Metadata(geoutils.ModelBase):
-    """
+    """Metadata Accumulo datastore model.
 
     """
     _name = 'meta_library'
+    _coord_cols = [['coord=0'], ['coord=1'], ['coord=2'], ['coord=3']]
 
-    def __init__(self, name=None):
-        """TODO
+    def __init__(self, connection, name=None):
+        """Metadata model initialisation.
+
+        **Kwargs:**
+            *name*: override the name of the Metadata table
 
         """
-        geoutils.ModelBase.__init__(self, name)
+        geoutils.ModelBase.__init__(self, connection, name)
+
+    @property
+    def coord_cols(self):
+        return self._coord_cols
+
+    @coord_cols.setter
+    def coord_cols(self, value):
+        del self._coord_cols[:]
+        self._coord_cols = []
+        self._coord_cols = value
+
+    def query_metadata(self, key=None, display=True):
+        """Query the metadata component from the datastore.
+
+        **Kwargs:**
+            *key*: at this time, *key* relates to the NITF file name
+            (less the ``.ntf`` extension) that is used in the current
+            schema as the Row ID component of the row key.
+
+            *display*: write the results to STDOUT (default ``True``)
+
+        **Returns:**
+            the metadata component of *key*
+
+        """
+        msg = 'Query metadata table "%s"' % self.name
+        if key is not None:
+            msg = '%s against key "%s"' % (msg, key)
+        log.info('%s ...' % msg)
+
+        results = self.query(self.name, key)
+
+        results_count = 0
+        for cell in results:
+            results_count += 1
+            if display:
+                print(cell)
+
+        log.info('Query key "%s" complete' % key)
+
+        return results_count
+
+    def query_coords(self, jsonify=False):
+        """Scan the metadata table for all family columns
+        that match :attr:`geoutils.Datastore.coord_cols`.  Typically
+        the family columns are of the form ``coord=?``.
+
+        **Kwargs:**
+            *jsonify*: return as a JSON string
+
+        **Returns:**
+            a list of 4 sets of (lists) of decimcal lat/long values that
+            represent the boundary coordinates of the image.  List
+            construct is similar to the following::
+
+                [
+                    [
+                        [32.983055419800003, 84.999999864200007],
+                        [32.983055419800003, 85.0002779135],
+                        [32.983333469100003, 84.999999864200007],
+                        [32.983333469100003, 85.0002779135]
+                    ]
+                ]
+
+        """
+        log.debug('Scanning for image boundary coordinates ...')
+
+        results = self.query(table=self.name,
+                             cols=self.coord_cols)
+
+        coords = {}
+        for cell in results:
+            (lat, lng) = cell.cq.split(',')
+            if coords.get(cell.row) is not None:
+                coords[cell.row].append([float(lat), float(lng)])
+            else:
+                coords[cell.row] = []
+                coords[cell.row].append([float(lat), float(lng)])
+
+        coords_list = []
+        for coord in coords.values():
+            coord.sort()
+            coords_list.append(coord)
+
+        if jsonify:
+            coords_list = json.dumps(coords_list)
+
+        log.info('Image boundary coordinates scan complete')
+
+        return coords_list

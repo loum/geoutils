@@ -4,7 +4,6 @@
 """
 import unittest2
 import os
-import tempfile
 import hashlib
 
 import geoutils
@@ -107,10 +106,10 @@ class TestDatastore(unittest2.TestCase):
         table = DATA['tables']
         table[image_tbl] = {'cf': {'cq': {'x_coord_size': '1024',
                                           'y_coord_size': '1024'},
-                                   'cv': {'image': image_fh.read}}}
+                                   'val': {'image': image_fh.read}}}
         table[thumb_tbl] = {'cf': {'cq': {'x_coord_size': '300',
                                           'y_coord_size': '300'},
-                                   'cv': {'image': thumb_fh.read}}}
+                                   'val': {'image': thumb_fh.read}}}
 
         self._ds.connect()
         self._ds.init_table(self._meta_table_name)
@@ -127,211 +126,33 @@ class TestDatastore(unittest2.TestCase):
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
 
-    def test_query_metadata_no_data(self):
-        """Query the metadata component from an empty datastore.
+    def test_ingest_from_file(self):
+        """Attempt to ingest from NITF file.
         """
+        ntf_file = os.path.join('geoutils',
+                                'tests',
+                                'files',
+                                'i_3001a.ntf')
+
         self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
         self._ds.init_table(self._image_table_name)
-
-        received = self._ds.query_metadata(table=self._image_table_name,
-                                           key='i_3001a')
-        expected = 0
-        msg = 'Scan across empty table should return 0 cells'
-        self.assertEqual(received, expected, msg)
-
-        # Clean up.
-        self._ds.delete_table(self._image_table_name)
-
-    def test_query_metadata_with_data(self):
-        """Attempt to query the metadata component from the datastore.
-        """
-        from geoutils.tests.files.ingest_data_01 import DATA
-
-        self._ds.connect()
-        self._ds.init_table(self._meta_table_name)
-
-        self._ds.ingest(DATA)
-
-        received = self._ds.query_metadata(table=self._meta_table_name,
-                                           key='i_3001a',
-                                           display=False)
-        expected = 77
-        msg = 'Scan across table should return cells'
-        self.assertEqual(received, expected, msg)
-
-        # Clean up.
-        self._ds.delete_table(self._meta_table_name)
-
-    def test_query_coords(self):
-        """Scan the metadata datastore table.
-        """
-        self._ds.connect()
-        self._ds.init_table(self._meta_table_name)
-
-        from geoutils.tests.files.ingest_data_01 import DATA
-        self._ds.ingest(DATA)
-
-        received = self._ds.query_coords(table=self._meta_table_name,
-                                         jsonify=True)
-        results_file = os.path.join('geoutils',
-                                    'tests',
-                                    'results',
-                                    'coords01.txt')
-        results_fh = open(results_file)
-        expected = results_fh.readline().rstrip()
-        msg = 'Image coordinates scan should return results'
-        self.assertEqual(received, expected, msg)
-
-        # Clean up.
-        self._ds.delete_table(self._meta_table_name)
-
-    def test_query_coords_missing_geogcs(self):
-        """Scan the metadata datastore table: missing GEOGCS.
-        """
-        self._ds.connect()
-        self._ds.init_table(self._meta_table_name)
-
-        from geoutils.tests.files.ingest_data_02 import DATA
-        self._ds.ingest(DATA)
-
-        received = self._ds.query_coords(table=self._meta_table_name,
-                                         jsonify=False)
-        expected = []
-        msg = 'Image coordinates scan should return no results: no GEOGCS'
-        self.assertListEqual(received, expected, msg)
-
-        # Clean up.
-        self._ds.delete_table(self._meta_table_name)
-
-    def test_query_image(self):
-        """Attempt to query the image component from the datastore.
-        """
-        image_stream_file = os.path.join('geoutils',
-                                         'tests',
-                                         'files',
-                                         'image_stream.out')
-        image_fh = open(image_stream_file, 'rb')
-
-        data = {'row_id': 'i_3001a'}
-        data['tables'] = {self._image_table_name: {
-                          'cf': {
-                              'cq': {
-                                  'x_coord_size': '1024',
-                                  'y_coord_size': '1024'},
-                              'val': {
-                                  'image': image_fh.read}}}}
-
-        self._ds.connect()
-        self._ds.init_table(self._image_table_name)
-
-        self._ds.ingest(data)
-
-        results = self._ds.query_image(table=self._image_table_name,
-                                       key='i_3001a')
-        received = None
-        for cell in results:
-            if cell.cf == 'image':
-                received = hashlib.md5(cell.val).hexdigest()
-                break
-
-        image_fh.seek(0)
-        expected = hashlib.md5(image_fh.read()).hexdigest()
-        msg = 'Ingested image stream differs from query result'
-        self.assertEqual(received, expected, msg)
-
-        # Clean up.
-        image_fh.close()
-        self._ds.delete_table(self._image_table_name)
-
-    def test_query_thumb(self):
-        """Attempt to query the thumb component from the datastore.
-        """
-        thumb_stream_file = os.path.join('geoutils',
-                                         'tests',
-                                         'files',
-                                         '300x300_stream.out')
-        thumb_fh = open(thumb_stream_file, 'rb')
-
-        data = {'row_id': 'i_3001a'}
-        data['tables'] = {self._thumb_table_name: {
-                          'cf': {
-                              'cq': {
-                                  'x_coord_size': '300',
-                                  'y_coord_size': '300'},
-                              'val': {
-                                  'thumb': thumb_fh.read}}}}
-
-        self._ds.connect()
         self._ds.init_table(self._thumb_table_name)
 
-        self._ds.ingest(data)
+        standard = geoutils.Standard(source_filename=ntf_file)
+        standard.open()
+        self._ds.ingest(standard())
 
-        results = self._ds.query_image(table=self._thumb_table_name,
-                                       key='i_3001a')
-        received = None
-        for cell in results:
-            if cell.cf == 'thumb':
-                received = hashlib.md5(cell.val).hexdigest()
-                break
-
-        thumb_fh.seek(0)
-        expected = hashlib.md5(thumb_fh.read()).hexdigest()
-        msg = 'Ingested thumb stream differs from query result'
-        self.assertEqual(received, expected, msg)
+        # If you want to ingest some sample data into the proxy server
+        # and block (so that you can connect via the client) then
+        # uncomment the following two lines.
+        #import time
+        #time.sleep(1000)
 
         # Clean up.
-        thumb_fh.close()
+        self._ds.delete_table(self._meta_table_name)
+        self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
-
-    def test_reconstruct_image_300x300_PNG(self):
-        """Reconstruct a 1D image stream to a 2D structure: 300x300 PNG.
-        """
-        image_stream_file = os.path.join('geoutils',
-                                         'tests',
-                                         'files',
-                                         '300x300_stream.out')
-        image_stream_fh = open(image_stream_file, 'rb')
-        png_image = tempfile.NamedTemporaryFile('wb')
-        dimensions = (300, 300)
-        self._ds.reconstruct_image(image_stream_fh.read,
-                                   dimensions).save(png_image, "PNG")
-
-        expected_file = os.path.join('geoutils',
-                                     'tests',
-                                     'files',
-                                     'image300x300.png')
-        expected = hashlib.md5(open(expected_file).read()).hexdigest()
-        received = hashlib.md5(open(png_image.name).read()).hexdigest()
-        msg = 'Original 300x300 PNG differs from reconstructed version'
-        self.assertEqual(received, expected, msg)
-
-        # Clean up.
-        image_stream_fh.close()
-
-    def test_reconstruct_image_50x50_PNG(self):
-        """Reconstruct a 1D image stream to a 2D structure: 50x50 PNG.
-        """
-        image_stream_file = os.path.join('geoutils',
-                                         'tests',
-                                         'files',
-                                         '50x50_stream.out')
-        image_stream_fh = open(image_stream_file, 'rb')
-        png_image = tempfile.NamedTemporaryFile('wb')
-        dimensions = (50, 50)
-        self._ds.reconstruct_image(image_stream_fh.read,
-                                   dimensions).save(png_image, "PNG")
-
-        expected_file = os.path.join('geoutils',
-                                     'tests',
-                                     'files',
-                                     'image50x50.png')
-        expected = hashlib.md5(open(expected_file).read()).hexdigest()
-        received = hashlib.md5(open(png_image.name).read()).hexdigest()
-        msg = 'Original 50x50 PNG differs from reconstructed version'
-        self.assertEqual(received, expected, msg)
-
-        # Clean up.
-        image_stream_fh.close()
 
     @classmethod
     def tearDownClass(cls):

@@ -4,6 +4,8 @@
 """
 import unittest2
 import os
+import tempfile
+import hashlib
 
 import geoutils
 
@@ -65,6 +67,56 @@ class TestGeoImage(unittest2.TestCase):
         expected = (1024, 1024)
         msg = 'Scale to larger 2048 pixels error'
         self.assertTupleEqual(received, expected, msg)
+
+    def test_reconstruct_image_300x300_PNG(self):
+        """Reconstruct a 1D image stream to a 2D structure: 300x300 PNG.
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
+        image_stream_fh = open(image_stream_file, 'rb')
+        png_image = tempfile.NamedTemporaryFile('wb')
+        dimensions = (300, 300)
+        self._image.reconstruct_image(image_stream_fh.read,
+                                      dimensions).save(png_image, "PNG")
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'files',
+                                     'image300x300.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        received = hashlib.md5(open(png_image.name).read()).hexdigest()
+        msg = 'Original 300x300 PNG differs from reconstructed version'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        image_stream_fh.close()
+
+    def test_reconstruct_image_50x50_PNG(self):
+        """Reconstruct a 1D image stream to a 2D structure: 50x50 PNG.
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '50x50_stream.out')
+        image_stream_fh = open(image_stream_file, 'rb')
+        png_image = tempfile.NamedTemporaryFile('wb')
+        dimensions = (50, 50)
+        self._image.reconstruct_image(image_stream_fh.read,
+                                      dimensions).save(png_image, "PNG")
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'files',
+                                     'image50x50.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        received = hashlib.md5(open(png_image.name).read()).hexdigest()
+        msg = 'Original 50x50 PNG differs from reconstructed version'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        image_stream_fh.close()
 
     @classmethod
     def tearDown(cls):
