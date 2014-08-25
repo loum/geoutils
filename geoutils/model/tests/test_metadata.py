@@ -50,9 +50,9 @@ class TestModelMetadata(unittest2.TestCase):
         self._ds.init_table(self._meta_table_name)
 
         received = self._meta.query_metadata(key='i_3001a')
-        expected = 0
+        expected = {}
         msg = 'Scan across empty table should return 0 cells'
-        self.assertEqual(received, expected, msg)
+        self.assertDictEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
@@ -66,10 +66,33 @@ class TestModelMetadata(unittest2.TestCase):
 
         self._ds.ingest(DATA)
 
-        received = self._meta.query_metadata(key='i_3001a',
-                                             display=False)
-        expected = 77
+        received = self._meta.query_metadata(key='i_3001a')
+        from geoutils.tests.results.meta_01 import META
+        expected = META
         msg = 'Scan across table should return cells'
+        self.assertDictEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_query_metadata_with_data_jsonify(self):
+        """Query the metadata component from the datastore: jsonify.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA)
+
+        received = self._meta.query_metadata(key='i_3001a',
+                                             jsonify=True)
+        results_file = os.path.join('geoutils',
+                                    'tests',
+                                    'results',
+                                    'ingest_data_01.txt')
+        results_fh = open(results_file)
+        expected = results_fh.readline().rstrip()
+        msg = 'JSON results from metadata scan error'
         self.assertEqual(received, expected, msg)
 
         # Clean up.

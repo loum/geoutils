@@ -37,10 +37,12 @@ class Metadata(geoutils.ModelBase):
         self._coord_cols = []
         self._coord_cols = value
 
-    def query_metadata(self, key=None, display=True):
+    def query_metadata(self, key=None, jsonify=False):
         """Query the metadata component from the datastore.
 
         **Kwargs:**
+            *jsonify*: return as a JSON string
+
             *key*: at this time, *key* relates to the NITF file name
             (less the ``.ntf`` extension) that is used in the current
             schema as the Row ID component of the row key.
@@ -48,7 +50,8 @@ class Metadata(geoutils.ModelBase):
             *display*: write the results to STDOUT (default ``True``)
 
         **Returns:**
-            the metadata component of *key*
+            the metadata component of *key* as a Python dictionary
+            structure or as a JSON string if *jsonify* argument is set
 
         """
         msg = 'Query metadata table "%s"' % self.name
@@ -56,17 +59,21 @@ class Metadata(geoutils.ModelBase):
             msg = '%s against key "%s"' % (msg, key)
         log.info('%s ...' % msg)
 
+        metas = {}
         results = self.query(self.name, key)
 
-        results_count = 0
         for cell in results:
-            results_count += 1
-            if display:
-                print(cell)
+            if metas.get(cell.row) is None:
+                metas[cell.row] = {}
+
+            metas[cell.row][cell.cf] = cell.cq
 
         log.info('Query key "%s" complete' % key)
 
-        return results_count
+        if jsonify:
+            metas = json.dumps(metas)
+
+        return metas
 
     def query_coords(self, jsonify=False):
         """Scan the metadata table for all family columns
