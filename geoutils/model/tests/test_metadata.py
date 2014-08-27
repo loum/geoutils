@@ -75,6 +75,24 @@ class TestModelMetadata(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
+    def test_query_metadata_with_data_missing_row_id(self):
+        """Query metadata from the datastore: missing row_id.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA)
+
+        received = self._meta.query_metadata(key='dodgy')
+        from geoutils.tests.results.meta_01 import META
+        expected = {}
+        msg = 'Scan across metadata table against dodgy row_id error'
+        self.assertDictEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
     def test_query_metadata_with_data_jsonify(self):
         """Query the metadata component from the datastore: jsonify.
         """
@@ -128,9 +146,9 @@ class TestModelMetadata(unittest2.TestCase):
         self._ds.ingest(DATA)
 
         received = self._meta.query_coords(jsonify=False)
-        expected = []
+        expected = {}
         msg = 'Image coords scan should return no results: no GEOGCS'
-        self.assertListEqual(received, expected, msg)
+        self.assertDictEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_table_name)

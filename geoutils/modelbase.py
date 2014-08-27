@@ -76,7 +76,7 @@ class ModelBase(object):
             cols = []
 
         scan_range = None
-        if key is None:
+        if key is not None:
             log.info('Table "%s" scan ...' % table)
             scan_range = pyaccumulo.Range(srow=key, erow=key)
         else:

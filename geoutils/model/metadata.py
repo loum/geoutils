@@ -88,14 +88,14 @@ class Metadata(geoutils.ModelBase):
             represent the boundary coordinates of the image.  List
             construct is similar to the following::
 
-                [
-                    [
+                {
+                    'i_3001a': [
                         [32.983055419800003, 84.999999864200007],
                         [32.983055419800003, 85.0002779135],
                         [32.983333469100003, 84.999999864200007],
                         [32.983333469100003, 85.0002779135]
                     ]
-                ]
+                }
 
         """
         log.debug('Scanning for image boundary coordinates ...')
@@ -112,14 +112,9 @@ class Metadata(geoutils.ModelBase):
                 coords[cell.row] = []
                 coords[cell.row].append([float(lat), float(lng)])
 
-        coords_list = []
-        for coord in coords.values():
-            coord.sort()
-            coords_list.append(coord)
-
         if jsonify:
-            coords_list = json.dumps(coords_list)
+            coords = json.dumps(coords)
 
         log.info('Image boundary coordinates scan complete')
 
-        return coords_list
+        return coords
