@@ -59,11 +59,13 @@ class Standard(object):
         meta_structure = self._build_meta_data_structure()
         data['tables'][self._meta_model._name] = {'cf': meta_structure}
 
-        image_structure = self._build_image_data_structure()
-        data['tables'][self._image_model.name] = {'cf': image_structure}
-        dimensions = {'x_coord_size': str(self.meta.x_coord_size),
-                      'y_coord_size': str(self.meta.y_coord_size)}
-        data['tables'][self._image_model.name]['cf']['cq'] = dimensions
+        # Suppress image data ingest as part of GDT-281.
+        # Not removing until final solution has been defined.
+        #image_structure = self._build_image_data_structure()
+        #data['tables'][self._image_model.name] = {'cf': image_structure}
+        #dimensions = {'x_coord_size': str(self.meta.x_coord_size),
+        #              'y_coord_size': str(self.meta.y_coord_size)}
+        #data['tables'][self._image_model.name]['cf']['cq'] = dimensions
 
         thumb_structure = self._build_image_data_structure(downsample=300,
                                                            thumb=True)

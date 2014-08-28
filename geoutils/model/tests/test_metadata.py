@@ -16,6 +16,8 @@ class TestModelMetadata(unittest2.TestCase):
     def setUpClass(cls):
         """Attempt to start the Accumulo mock proxy server.
         """
+        cls.maxDiff = None
+
         conf = os.path.join('geoutils',
                             'tests',
                             'files',

@@ -6,6 +6,7 @@ table schema.
 __all__ = ["Metadata"]
 
 import json
+import re
 
 import geoutils
 from oct.utils.log import log
@@ -51,7 +52,18 @@ class Metadata(geoutils.ModelBase):
 
         **Returns:**
             the metadata component of *key* as a Python dictionary
-            structure or as a JSON string if *jsonify* argument is set
+            structure or as a JSON string if *jsonify* argument is set.
+            Structure is similar to the following"::
+
+                {'i_3001a': {
+                    'coord=3': '32.9833334691,85.0002779135',
+                    'coord=1': '32.9833334691,84.9999998642',
+                    ...
+                    'metadata': {
+                        'NITF_IDATIM': '19961217102630',
+                        'NITF_FSCLAS': 'U',
+                        'NITF_ISDGDT': '',
+                        ...}}}
 
         """
         msg = 'Query metadata table "%s"' % self.name
@@ -62,11 +74,18 @@ class Metadata(geoutils.ModelBase):
         metas = {}
         results = self.query(self.name, key)
 
+        pattern = re.compile('metadata=')
         for cell in results:
             if metas.get(cell.row) is None:
-                metas[cell.row] = {}
+                metas[cell.row] = {'metadata': {}}
 
-            metas[cell.row][cell.cf] = cell.cq
+            # Strip off the leading 'metadata=' token.
+            family = cell.cf
+            (family, subs) = pattern.subn('', family, count=1)
+            if subs == 1:
+                metas[cell.row]['metadata'][family] = cell.cq
+            else:
+                metas[cell.row][family] = cell.cq
 
         log.info('Query key "%s" complete' % key)
 
