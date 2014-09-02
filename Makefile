@@ -1,7 +1,7 @@
 PY=/usr/bin/python
 NOSE=/usr/bin/nosetests1.1 -s -v --with-xunit
 GIT=/usr/bin/git
-PYTHONPATH=.:../geolib-mock
+PYTHONPATH=.:../geolib-mock:../oct-utils
 
 # The TEST variable can be set to allow you to control which tests
 # to run.  For example, if the current project has a test set defined at
