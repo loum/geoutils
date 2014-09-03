@@ -141,7 +141,7 @@ class TestDatastore(unittest2.TestCase):
 
         standard = geoutils.Standard(source_filename=ntf_file)
         standard.open()
-        self._ds.ingest(standard())
+        self._ds.ingest(standard(dry=True))
 
         # If you want to ingest some sample data into the proxy server
         # and block (so that you can connect via the client) then

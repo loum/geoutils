@@ -159,7 +159,7 @@ class TestModelImage(unittest2.TestCase):
                                           target_path='tmp',
                                           dry=dry)
         expected = 'hdfs://jp2044lm-hdfs-nn01/tmp/i_3001a.ntf'
-        msg = 'no-HDFS host write error'
+        msg = 'Valid HDFS host write error'
         self.assertEqual(received, expected, msg)
 
     def test_hdfs_write_with_dodgy_hdfs_host(self):

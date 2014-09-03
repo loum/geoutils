@@ -133,6 +133,13 @@ class Image(geoutils.ModelBase):
             *filename*: full path to the source file on the local
             filesystem that will be created on the target HDFS filesystem
 
+        **Kwargs:**
+            *target_path*: directory structure that can be prepended to
+            the destination file path.  Defaults to ``None`` which means
+            current directory of target device.
+
+            *dry*: only report, do not execute
+
         **Returns:**
             The URI scheme of the written file on success or ``None``
             otherwise.  Some successful examples include::

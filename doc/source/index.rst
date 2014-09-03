@@ -11,7 +11,7 @@ Contents:
    modules/standard.rst
    modules/nitf.rst
    modules/metadata.rst
-   modules/image.rst
+   modules/geoimage.rst
 
    modules/datastore.rst
 

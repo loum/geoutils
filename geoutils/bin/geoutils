@@ -36,17 +36,18 @@ def main():
     datastore.connect()
 
     if args.action == 'ingest':
-        datastore.delete_table('meta_test')
-        datastore.delete_table('image_test')
-        datastore.delete_table('thumb_test')
-        datastore.init_table('meta_test')
-        datastore.init_table('image_test')
-        datastore.init_table('thumb_test')
+        datastore.delete_table('meta_library')
+        datastore.delete_table('thumb_library')
+        datastore.init_table('meta_library')
+        datastore.init_table('thumb_library')
 
         if args.file is not None:
             nitf = geoutils.NITF(source_filename=args.file)
+            nitf.image_model.hdfs_namenode = settings.HDFS_NAMENODE
+            nitf.image_model.hdfs_namenode_port = settings.HDFS_NAMENODE_PORT
+            nitf.image_model.hdfs_namenode_user = settings.HDFS_NAMENODE_USER
             nitf.open()
-            datastore.ingest(nitf())
+            datastore.ingest(nitf(target_path=settings.HDFS_TARGET_PATH))
     elif args.action == 'query':
         datastore.query_metadata(table='meta_test', key=args.key)
 

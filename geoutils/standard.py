@@ -32,7 +32,7 @@ class Standard(object):
     def __init__(self, source_filename=None):
         self._filename = source_filename
 
-    def __call__(self):
+    def __call__(self, target_path=None, dry=False):
         """The object instance callable is a quick handle to the
         meta/image extaction process.  It will also construct a dictionary
         like construct that can be fed directly into a
@@ -57,22 +57,27 @@ class Standard(object):
         data['tables'] = {}
 
         meta_structure = self._build_meta_data_structure()
-        data['tables'][self._meta_model._name] = {'cf': meta_structure}
+        data['tables'][self.meta_model.name] = {'cf': meta_structure}
+
+        # New work as part of GDT-239 to build the image with a
+        # reference to a HDFS URI.
+        image_uri = self._build_image_uri(target_path, dry)
+        data['tables'][self.meta_model.name]['cf']['cq']['image'] = image_uri
 
         # Suppress image data ingest as part of GDT-281.
         # Not removing until final solution has been defined.
         #image_structure = self._build_image_data_structure()
-        #data['tables'][self._image_model.name] = {'cf': image_structure}
+        #data['tables'][self.image_model.name] = {'cf': image_structure}
         #dimensions = {'x_coord_size': str(self.meta.x_coord_size),
         #              'y_coord_size': str(self.meta.y_coord_size)}
-        #data['tables'][self._image_model.name]['cf']['cq'] = dimensions
+        #data['tables'][self.image_model.name]['cf']['cq'] = dimensions
 
         thumb_structure = self._build_image_data_structure(downsample=300,
                                                            thumb=True)
-        data['tables'][self._thumb_model.name] = {'cf': thumb_structure}
+        data['tables'][self.thumb_model.name] = {'cf': thumb_structure}
         thumb_dimensions = {'x_coord_size': '300',
                             'y_coord_size': '300'}
-        data['tables'][self._thumb_model.name]['cf']['cq'] = thumb_dimensions
+        data['tables'][self.thumb_model.name]['cf']['cq'] = thumb_dimensions
 
         log.info('Ingest data structure build done')
 
@@ -101,6 +106,18 @@ class Standard(object):
     @property
     def image(self):
         return self._image
+
+    @property
+    def meta_model(self):
+        return self._meta_model
+
+    @property
+    def image_model(self):
+        return self._image_model
+
+    @property
+    def thumb_model(self):
+        return self._thumb_model
 
     def _build_meta_data_structure(self):
         """TODO
@@ -139,7 +156,25 @@ class Standard(object):
         return data
 
     def _build_image_data_structure(self, downsample=None, thumb=False):
-        """TODO
+        """Create a reference to an image extraction process that is
+        associated with the image library's schema image/thumb component.
+
+        Requires an active :attr:`dataset`.
+
+        **Kwargs:**
+            *downsample*: an integer value that represents the
+            reduced horizontal image pixel count.  The vertical
+            pixel count will be scaled automatically.
+
+            *thumb*: boolean flag that distinuguishes processing
+            as a reduced image thumb.  Importantly, this will set the
+            column family value to ``thumb``
+
+        **Returns:**
+            dictionary structure that represents an Accumulo
+            family/value structure of the form::
+
+                {'val: {'<thumb|image>': <method>}
 
         """
         msg = 'Building ingest image component'
@@ -147,17 +182,45 @@ class Standard(object):
             msg = '%s: downsample %d columns' % (msg, downsample)
         log.info('%s ...' % msg)
 
-        data = {}
-
         key = 'image'
         if thumb:
             key = 'thumb'
+
+        data = {}
         data['val'] = {key: self.image.extract_image(self.dataset,
                                                      downsample)}
 
         log.info('Ingest image structure build done')
 
         return data
+
+    def _build_image_uri(self, target_path=None, dry=False):
+        """Stores :attr:`filename` into a HDFS datastore
+        and builds the resultant URI into the image library schema's
+        ``image`` component.
+
+        Requires an active :attr:`dataset`.
+
+        **Kwargs:**
+            *target_path*: directory structure that can be prepended to
+            the destination file path.  Defaults to ``None`` which means
+            current directory of target device.
+
+            *dry*: only report, do not execute
+
+
+        **Returns:**
+            dictionary structure that represents an Accumulo
+            column family/qualifier structure of the form::
+
+                hdfs://jp2044lm-hdfs-nn01/tmp/i_3001a.ntf
+
+        """
+        uri = self.image_model.hdfs_write(self.filename,
+                                          target_path,
+                                          dry)
+
+        return uri
 
     def open(self):
         """Attempts to open :attr:`filename` as a raster file as a
