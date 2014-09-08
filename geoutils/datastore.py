@@ -210,6 +210,27 @@ class Datastore(object):
 
         return status
 
+    def exists_table(self, name):
+        """Check if table *name* exists in the datastore.
+
+        **Kwargs:**
+            *name*: override the name of the image table to delete
+
+        """
+        status = False
+        log.info('Checking image library table: "%s" ...' % name)
+
+        if self.connection is not None:
+            if self.connection.table_exists(name):
+                status = True
+        else:
+            log.error('Connection state not detected. Table not deleted')
+
+        log.info('Image library table "%s" exists?: "%s"' %
+                 (name, status))
+
+        return status
+
     def close(self):
         """Attempt to close the :attr:`geoutils.Datastore.connection`
         state.

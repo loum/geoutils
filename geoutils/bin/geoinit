@@ -1,0 +1,111 @@
+#!/usr/bin/python
+"""Initialise the Accumulo datastore tables.
+
+"""
+
+import os
+import inspect
+import signal
+import time
+import sys
+
+import daemoniser
+import geoutils
+
+try:
+    import settings
+except ImportError as err:
+    sys.exit('Please define your settings.py file')
+
+
+class GeoinitDaemon(daemoniser.Daemon):
+    """:class:`GeoinitDaemon`
+
+    """
+    dry = False
+    accumulo = None
+
+    def __init__(self, pidfile, force=False, dry=False):
+        """:class:`GeoinitDaemon` initialisation.
+
+        """
+        daemoniser.Daemon.__init__(self, pidfile=pidfile)
+
+        self.force = force
+        self.dry = dry
+
+    def _start(self, event):
+        """Override the :meth:daemoniser.Daemon._start` method.
+
+        """
+        self.accumulo = self.accumulo_connect()
+
+        self.init(force=self.force)
+
+        if self.dry:
+            print('Dry run iteration complete -- aborting')
+        else:
+            print('Batch run iteration complete -- aborting')
+
+    def accumulo_connect(self):
+        """Create a connection to the Accumulo datastore defined
+        within the environment's setting.py file.
+
+        """
+        datastore = geoutils.Datastore()
+        datastore.host = settings.HOST
+        datastore.port = settings.PORT
+        datastore.user = settings.USER
+        datastore.password = settings.PASSWORD
+        datastore.connect()
+
+        return datastore
+
+    def init(self, force=False):
+        """Initialise the Accumulo datatore tables.
+
+        **Args:**
+            *force*: force deletion of existing Accumulo table structure
+            before re-initialising.
+
+            .. warning::
+                This is a destructive step and will remove all existing
+                data from the Accumulo tables
+
+        """
+        for table in ['meta_library', 'thumb_library']:
+            print('Processing table: "%s"' % table)
+            table_exists = False
+            if self.accumulo.exists_table(table):
+                if force:
+                    if not self.dry:
+                        self.accumulo.delete_table(table)
+                    print('Forcing table "%s" deletion' % table)
+                else:
+                    table_exists = True
+                    print('Table "%s" already exists' % table)
+
+            if not table_exists:
+                if not self.dry:
+                    self.accumulo.init_table(table)
+                print('Table "%s" created' % table)
+
+
+def main():
+    service = daemoniser.Service()
+    service.parser.add_option('-f', '--force',
+                              dest='force',
+                              action='store_true',
+                              help='force existing table deletion')
+    script_name = os.path.basename(inspect.getfile(inspect.currentframe()))
+    service.check_args(script_name)
+
+    # OK, start processing.
+    ingestd = GeoinitDaemon(pidfile=service.pidfile,
+                            force=(service.options.force is not None),
+                            dry=service.dry)
+
+    service.launch_command(ingestd, script_name)
+
+if __name__ == '__main__':
+    main()
