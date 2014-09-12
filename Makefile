@@ -46,10 +46,10 @@ test_env:
 	 $(NOSE_ENV) $(TEST)
 
 coverage: test
-        $(COVERAGE) xml -i
+	$(COVERAGE) xml -i
 
 coverage_env: test_env
-        $(COVERAGE_ENV) xml -i
+	$(COVERAGE_ENV) xml -i
 
 uninstall:
 	$(RPM) -e python-geoutils
