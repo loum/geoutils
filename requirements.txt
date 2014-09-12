@@ -4,7 +4,7 @@ python-geosutils==0.05
 python-daemoniser==0.0.0
 python-geolib-mock==0.0.0
 pyaccumulo==1.5.0.6.dev14
-requests=1.1.0
+requests==1.1.0
 nose
 unittest2
 coverage
