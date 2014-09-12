@@ -9,7 +9,7 @@ __all__ = ["Metadata"]
 from osgeo import osr
 import os
 
-from oct.utils.log import log
+from geosutils.log import log
 
 
 class Metadata(object):

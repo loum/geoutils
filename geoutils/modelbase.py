@@ -7,7 +7,7 @@ __all__ = ["ModelBase"]
 
 import pyaccumulo
 
-from oct.utils.log import log
+from geosutils.log import log
 
 
 class ModelBase(object):

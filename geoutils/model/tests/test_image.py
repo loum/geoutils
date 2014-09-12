@@ -9,7 +9,7 @@ import tempfile
 
 import geoutils
 import geolib_mock
-from oct.utils.files import (get_directory_files_list,
+from geosutils.files import (get_directory_files_list,
                              remove_files)
 
 

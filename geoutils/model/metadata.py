@@ -9,7 +9,7 @@ import json
 import re
 
 import geoutils
-from oct.utils.log import log
+from geosutils.log import log
 
 
 class Metadata(geoutils.ModelBase):

@@ -11,8 +11,8 @@ import requests
 from pywebhdfs.webhdfs import PyWebHdfsClient
 
 import geoutils
-from oct.utils.log import log
-from oct.utils.files import move_file
+from geosutils.log import log
+from geosutils.files import move_file
 
 
 class Image(geoutils.ModelBase):

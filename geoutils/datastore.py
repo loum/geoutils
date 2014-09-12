@@ -9,7 +9,7 @@ from thrift.transport.TTransport import TTransportException
 from pyaccumulo.proxy.AccumuloProxy import AccumuloSecurityException
 
 import geoutils.model
-from oct.utils.log import log
+from geosutils.log import log
 
 
 class Datastore(object):

@@ -1,7 +1,10 @@
 PY=/usr/bin/python
-NOSE=/usr/bin/nosetests1.1 -s -v --with-xunit
+NOSE=/usr/bin/nosetests1.1 -s -v --with-xunit --with-coverage --cover-erase --cover-package geoutils
+NOSE_ENV=.env/bin/nosetests -s -v --with-xunit --with-coverage --cover-erase --cover-package geoutils
 GIT=/usr/bin/git
-PYTHONPATH=.:../geolib-mock:../oct-utils
+COVERAGE=/usr/bin/coverage
+COVERAGE_ENV=.env/bin/coverage
+PYTHONPATH=.:../geolib-mock:../geosutils
 
 # The TEST variable can be set to allow you to control which tests
 # to run.  For example, if the current project has a test set defined at
@@ -38,6 +41,15 @@ build: docs rpm
 
 test:
 	 PYTHONPATH=$(PYTHONPATH) $(NOSE) $(TEST)
+
+test_env:
+	 $(NOSE_ENV) $(TEST)
+
+coverage: test
+        $(COVERAGE) xml -i
+
+coverage_env: test_env
+        $(COVERAGE_ENV) xml -i
 
 uninstall:
 	$(RPM) -e python-geoutils

@@ -12,7 +12,7 @@ from osgeo import gdal
 
 import geoutils
 import geoutils.model
-from oct.utils.log import log
+from geosutils.log import log
 
 
 class Standard(object):

@@ -8,7 +8,7 @@ __all__ = ["GeoImage"]
 
 import Image
 
-from oct.utils.log import log
+from geosutils.log import log
 
 
 class GeoImage(object):

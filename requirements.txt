@@ -1,0 +1,8 @@
+--extra-index-url http://repo.corp.f7:8081/artifactory/pip-geospatial-local
+
+python-geosutils==0.05
+python-daemoniser==0.0.0
+python-geolib-mock==0.0.0
+nose
+unittest2
+coverage
