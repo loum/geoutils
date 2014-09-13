@@ -33,8 +33,15 @@ class TestMetadata(unittest2.TestCase):
         msg = 'Object is not a geoutils.Metadata'
         self.assertIsInstance(self._meta, geoutils.Metadata, msg)
 
+    def test_extract_meta_no_dataset(self):
+        """Extract the metadata component: no dataset.
+        """
+        received = self._meta.extract_meta(dataset=None)
+        msg = 'Metadata extraction (no dataset) is not False'
+        self.assertFalse(received, msg)
+
     def test_extract_meta(self):
-        """Verify the x_coord_size attribute.
+        """Extract the metadata component.
         """
         nitf = geoutils.NITF(source_filename=self._file)
         nitf.open()

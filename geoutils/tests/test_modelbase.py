@@ -1,4 +1,4 @@
- # pylint: disable=R0904,C0103
+# pylint: disable=R0904,C0103
 """:class:`geoutils.ModelBase` tests.
 
 """
@@ -23,9 +23,7 @@ class TestModelBase(unittest2.TestCase):
         cls._mock = geolib_mock.MockServer(conf)
         cls._mock.start()
 
-        cls._meta_table_name = 'meta_library'
         cls._image_table_name = 'image_library'
-        cls._thumb_table_name = 'thumb_library'
 
     @classmethod
     def setUp(cls):
@@ -58,9 +56,7 @@ class TestModelBase(unittest2.TestCase):
         cls._mock.stop()
         del cls._mock
 
-        del cls._meta_table_name
         del cls._image_table_name
-        del cls._thumb_table_name
 
     @classmethod
     def tearDown(cls):

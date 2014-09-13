@@ -17,12 +17,12 @@ class Thumb(geoutils.ModelBase):
     """
     _name = 'thumb_library'
 
-    def __init__(self, name=None):
+    def __init__(self, connection, name=None):
         """:class:`geoutils.model.Thumb models the Accumulo
         ``thumb_library`` table.
 
         """
-        geoutils.ModelBase.__init__(self, name)
+        geoutils.ModelBase.__init__(self, connection, name)
 
     def query_thumb(self, key, img_format='JPEG'):
         """Query the metadata component from the datastore.

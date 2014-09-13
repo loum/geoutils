@@ -34,12 +34,12 @@ class Image(geoutils.ModelBase):
     _hdfs_namenode_user = None
     _hdfs = None
 
-    def __init__(self, name=None):
+    def __init__(self, connection, name=None):
         """:class:`geoutils.model.Image models the Accumulo
         ``image_library`` table.
 
         """
-        geoutils.ModelBase.__init__(self, name)
+        geoutils.ModelBase.__init__(self, connection, name)
 
     @property
     def hdfs_namenode(self):

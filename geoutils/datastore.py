@@ -141,8 +141,7 @@ class Datastore(object):
         """
         log.info('Attempting connection to Accumulo proxy ...')
         log.debug('Connection args: "%s:%s@%s:%s"' %
-                  #(self.user, '********', self.host, self.port))
-                  (self.user, self.password, self.host, self.port))
+                  (self.user, '********', self.host, self.port))
         try:
             self.connection = pyaccumulo.Accumulo(host=self.host,
                                                   port=self.port,
@@ -217,14 +216,14 @@ class Datastore(object):
             *name*: override the name of the image table to delete
 
         """
-        status = False
         log.info('Checking image library table: "%s" ...' % name)
+        status = False
 
         if self.connection is not None:
             if self.connection.table_exists(name):
                 status = True
         else:
-            log.error('Connection state not detected. Table not deleted')
+            log.error('Connection not detected: table state undefined ')
 
         log.info('Image library table "%s" exists?: "%s"' %
                  (name, status))
@@ -242,10 +241,19 @@ class Datastore(object):
             log.info('Proxy client connection closed')
 
     def ingest(self, data):
-        """TODO
+        """Write a record to the Accumulo datastore.
+
+        **Args:**
+            *data*: dictionary object of the data to ingest
+
+        **Returns:**
+            Boolean ``True`` on successful record creation.
+
+            Boolean ``False`` otherwise
 
         """
         log.info('Ingesting data ...')
+        ingest_status = False
 
         row_id = data.get('row_id')
         if row_id is None:
@@ -270,7 +278,11 @@ class Datastore(object):
                 writer.add_mutation(mutation)
                 writer.close()
 
+                ingest_status = True
+
         log.info('Data ingestion complete')
+
+        return ingest_status
 
     def _ingest_family_qualifiers(self, family_qualifiers, mutation):
         if family_qualifiers is not None:
