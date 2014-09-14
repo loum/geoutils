@@ -28,6 +28,7 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.model.tests:TestModelImage \
 	geoutils.model.tests:TestModelThumb \
 	geoutils.config.tests:TestConfig \
+	geoutils.config.tests:TestInitConfig \
 	geoutils.config.tests:TestIngestConfig
 
 sdist:
