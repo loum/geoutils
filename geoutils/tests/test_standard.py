@@ -58,6 +58,10 @@ class TestStandard(unittest2.TestCase):
         msg = 'NITF open should set geoutils.Standard.dataset attribute'
         self.assertIsInstance(received, gdal.Dataset, msg)
 
+        self._standard.close()
+        msg = 'Dataset stream object after close is not None'
+        self.assertIsNone(self._standard.dataset, msg)
+
     def test_build_meta_data_structure(self):
         """Build the metadata ingest data structure.
         """

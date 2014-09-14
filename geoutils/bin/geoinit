@@ -2,20 +2,11 @@
 """Initialise the Accumulo datastore tables.
 
 """
-
 import os
 import inspect
-import signal
-import time
-import sys
 
 import daemoniser
 import geoutils
-
-try:
-    import settings
-except ImportError as err:
-    sys.exit('Please define your settings.py file')
 
 
 class GeoinitDaemon(daemoniser.Daemon):
@@ -24,15 +15,22 @@ class GeoinitDaemon(daemoniser.Daemon):
     """
     dry = False
     accumulo = None
+    conf = None
 
-    def __init__(self, pidfile, force=False, dry=False):
+    def __init__(self,
+                 pidfile,
+                 force=False,
+                 dry=False,
+                 config=None):
         """:class:`GeoinitDaemon` initialisation.
 
         """
-        daemoniser.Daemon.__init__(self, pidfile=pidfile)
+        super(GeoinitDaemon, self).__init__(pidfile=pidfile)
 
         self.force = force
         self.dry = dry
+        self.conf = config
+        self.conf.parse_config()
 
     def _start(self, event):
         """Override the :meth:daemoniser.Daemon._start` method.
@@ -53,10 +51,11 @@ class GeoinitDaemon(daemoniser.Daemon):
 
         """
         datastore = geoutils.Datastore()
-        datastore.host = settings.HOST
-        datastore.port = settings.PORT
-        datastore.user = settings.USER
-        datastore.password = settings.PASSWORD
+        datastore.host = self.conf.accumulo_host
+        datastore.port = self.conf.accumulo_port
+        datastore.user = self.conf.accumulo_user
+        datastore.password = self.conf.accumulo_password
+
         datastore.connect()
 
         return datastore
@@ -100,12 +99,17 @@ def main():
     script_name = os.path.basename(inspect.getfile(inspect.currentframe()))
     service.check_args(script_name)
 
+    config = None
+    if service.options.config is not None:
+        config = geoutils.InitConfig(service.options.config)
+
     # OK, start processing.
     ingestd = GeoinitDaemon(pidfile=service.pidfile,
                             force=(service.options.force is not None),
-                            dry=service.dry)
+                            dry=service.dry,
+                            config=config)
 
-    service.launch_command(ingestd, script_name)
+    service.launch_command(ingestd, script_name, inline=True)
 
 if __name__ == '__main__':
     main()
