@@ -7,15 +7,9 @@ import os
 import inspect
 import signal
 import time
-import sys
 
 import daemoniser
 import geoutils
-
-try:
-    import settings
-except ImportError as err:
-    sys.exit('Please define your settings.py file')
 
 
 class GeoingestDaemon(daemoniser.Daemon):
@@ -24,18 +18,25 @@ class GeoingestDaemon(daemoniser.Daemon):
     """
     dry = False
     batch = False
+    conf = None
     loop = 5
-    accumulo = None
 
-    def __init__(self, pidfile, filename=None, dry=False, batch=False):
+    def __init__(self,
+                 pidfile,
+                 filename=None,
+                 dry=False,
+                 batch=False,
+                 config=None):
         """:class:`GeoingestDaemon` initialisation.
 
         """
-        daemoniser.Daemon.__init__(self, pidfile=pidfile)
+        super(GeoingestDaemon, self).__init__(pidfile=pidfile)
 
         self.filename = filename
         self.dry = dry
         self.batch = batch
+        self.conf = config
+        self.conf.parse_config()
 
     def _start(self, event):
         """Override the :meth:daemoniser.Daemon._start` method.
@@ -48,15 +49,14 @@ class GeoingestDaemon(daemoniser.Daemon):
         while not event.isSet():
             self.ingest(self.filename)
 
-            if not event.isSet():
-                if self.dry:
-                    print('Dry run iteration complete -- aborting')
-                    event.set()
-                elif self.batch:
-                    print('Batch run iteration complete -- aborting')
-                    event.set()
-                else:
-                    time.sleep(self.loop)
+            if self.dry:
+                print('Dry run iteration complete -- aborting')
+                event.set()
+            elif self.batch:
+                print('Batch run iteration complete -- aborting')
+                event.set()
+            else:
+                time.sleep(self.loop)
 
     def accumulo_connect(self):
         """Create a connection to the Accumulo datastore defined
@@ -64,10 +64,11 @@ class GeoingestDaemon(daemoniser.Daemon):
 
         """
         datastore = geoutils.Datastore()
-        datastore.host = settings.HOST
-        datastore.port = settings.PORT
-        datastore.user = settings.USER
-        datastore.password = settings.PASSWORD
+        datastore.host = self.conf.accumulo_host
+        datastore.port = self.conf.accumulo_port
+        datastore.user = self.conf.accumulo_user
+        datastore.password = self.conf.accumulo_password
+
         datastore.connect()
 
         return datastore
@@ -80,11 +81,12 @@ class GeoingestDaemon(daemoniser.Daemon):
 
         """
         nitf = geoutils.NITF(source_filename=filename)
-        nitf.image_model.hdfs_namenode = settings.HDFS_NAMENODE
-        nitf.image_model.hdfs_namenode_port = settings.HDFS_NAMENODE_PORT
-        nitf.image_model.hdfs_namenode_user = settings.HDFS_NAMENODE_USER
+        nitf.image_model.hdfs_namenode = self.conf.namenode_user
+        nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
+        nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
         nitf.open()
-        self.accumulo.ingest(nitf(target_path=settings.HDFS_TARGET_PATH))
+        hdfs_target_path = self.conf.namenode_target_path
+        self.accumulo.ingest(nitf(target_path=hdfs_target_path))
 
 
 def main():
@@ -100,11 +102,16 @@ def main():
     if service.options.file:
         command_line_file = service.options.file
 
+    config = None
+    if service.options.config is not None:
+        config = geoutils.IngestConfig(service.options.config)
+
     # OK, start processing.
     ingestd = GeoingestDaemon(pidfile=service.pidfile,
                               filename=command_line_file,
                               dry=service.dry,
-                              batch=service.batch)
+                              batch=service.batch,
+                              config=config)
 
     service.launch_command(ingestd, script_name)
 

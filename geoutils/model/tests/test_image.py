@@ -27,14 +27,13 @@ class TestModelImage(unittest2.TestCase):
         cls._mock = geolib_mock.MockServer(conf)
         cls._mock.start()
 
-        cls._meta_table_name = 'meta_library'
         cls._image_table_name = 'image_library'
-        cls._thumb_table_name = 'thumb_library'
 
     @classmethod
     def setUp(cls):
         cls._ds = geoutils.Datastore()
-        cls._image = geoutils.model.Image(cls._ds.connect())
+        cls._image = geoutils.model.Image(connection=cls._ds.connect(),
+                                          name=cls._image_table_name)
 
     def test_init(self):
         """Initialise a :class:`geoutils.model.Image` object.
@@ -183,9 +182,7 @@ class TestModelImage(unittest2.TestCase):
         """
         cls._mock.stop()
 
-        del cls._meta_table_name
         del cls._image_table_name
-        del cls._thumb_table_name
 
     @classmethod
     def tearDown(cls):

@@ -26,13 +26,16 @@ class TestModelMetadata(unittest2.TestCase):
         cls._mock.start()
 
         cls._meta_table_name = 'meta_library'
-        cls._image_table_name = 'image_library'
-        cls._thumb_table_name = 'thumb_library'
 
     @classmethod
     def setUp(cls):
         cls._ds = geoutils.Datastore()
-        cls._meta = geoutils.model.Metadata(cls._ds.connect())
+        cls._meta = geoutils.model.Metadata(connection=cls._ds.connect(),
+                                            name=cls._meta_table_name)
+        cls._meta.coord_cols = [['coord=0'],
+                                ['coord=1'],
+                                ['coord=2'],
+                                ['coord=3']]
 
     def test_init(self):
         """Initialise a :class:`geoutils.model.Metadata` object.
@@ -162,8 +165,6 @@ class TestModelMetadata(unittest2.TestCase):
         cls._mock.stop()
 
         del cls._meta_table_name
-        del cls._image_table_name
-        del cls._thumb_table_name
 
     @classmethod
     def tearDown(cls):

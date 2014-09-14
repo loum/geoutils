@@ -39,14 +39,6 @@ class ModelBase(object):
     def name(self, value):
         self._name = value
 
-    @property
-    def connection(self):
-        return self._connection
-
-    @connection.setter
-    def connection(self, value):
-        self._connection = value
-
     def query(self, table, key=None, cols=None):
         """Base method for a Accumulo table scan.
 

@@ -4,7 +4,6 @@
 """
 import unittest2
 import os
-import hashlib
 
 import geoutils
 import geolib_mock
@@ -31,6 +30,9 @@ class TestDatastore(unittest2.TestCase):
     @classmethod
     def setUp(cls):
         cls._ds = geoutils.Datastore()
+        cls._ds.host = 'localhost'
+        cls._ds.port = 42425
+        cls._ds.user = 'root'
 
     def test_init(self):
         """Initialise a :class:`geoutils.Datastore` object.
@@ -85,8 +87,31 @@ class TestDatastore(unittest2.TestCase):
         msg = 'Table deletion (missing table) should return False'
         self.assertFalse(received, msg)
 
+    def test_create_write_no_connection(self):
+        """Create an Accumulo writer object: no connection.
+        """
+        received = self._ds._create_writer(table='dodgy')
+        msg = 'Accumulo writer object (no connection) not None'
+        self.assertIsNone(received, msg)
+
+    def test_ingest_no_connection(self):
+        """Accumulo ingest: no connection.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+        received = self._ds.ingest(DATA)
+        msg = 'Accumulo ingest (no connection) not False'
+        self.assertFalse(received, msg)
+
+    def test_ingest_no_row_id(self):
+        """Ingest attempt with no datastore connection.
+        """
+        data = {}
+        received = self._ds.ingest(data)
+        msg = 'Ingest status with no row_id not False'
+        self.assertFalse(received, msg)
+
     def test_ingest(self):
-        """Attempt to ingest the metadata component into the datastore.
+        """Ingest the metadata component into the datastore.
         """
         image_stream_file = os.path.join('geoutils',
                                          'tests',
@@ -116,7 +141,9 @@ class TestDatastore(unittest2.TestCase):
         self._ds.init_table(self._image_table_name)
         self._ds.init_table(self._thumb_table_name)
 
-        self._ds.ingest(DATA)
+        received = self._ds.ingest(DATA)
+        msg = 'Ingest status with datastore connection not True'
+        self.assertTrue(received, msg)
 
         # Clean up.
         DATA['tables'].pop(self._image_table_name, None)
@@ -124,6 +151,29 @@ class TestDatastore(unittest2.TestCase):
         image_fh.close()
         self._ds.delete_table(self._meta_table_name)
         self._ds.delete_table(self._image_table_name)
+        self._ds.delete_table(self._thumb_table_name)
+
+    def test_ingest_val_column_not_callable(self):
+        """Ingest: value column not a callable.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+        thumb_tbl = self._thumb_table_name
+        table = DATA['tables']
+        table[thumb_tbl] = {'cf': {'cq': {'x_coord_size': '300',
+                                          'y_coord_size': '300'},
+                                   'val': {'image': 'just a scalar'}}}
+
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+        self._ds.init_table(self._thumb_table_name)
+
+        received = self._ds.ingest(DATA)
+        msg = 'Ingest with value column as a scalar not True'
+        self.assertTrue(received, msg)
+
+        # Clean up.
+        DATA['tables'].pop(self._thumb_table_name, None)
+        self._ds.delete_table(self._meta_table_name)
         self._ds.delete_table(self._thumb_table_name)
 
     def test_ingest_from_file(self):
@@ -146,13 +196,49 @@ class TestDatastore(unittest2.TestCase):
         # If you want to ingest some sample data into the proxy server
         # and block (so that you can connect via the client) then
         # uncomment the following two lines.
-        #import time
-        #time.sleep(1000)
+        # import time
+        # time.sleep(1000)
 
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
+
+    def test_delete_table_no_connection(self):
+        """Delete an Accumulo table: no connection.
+        """
+        received = self._ds.delete_table(name='dodge')
+        msg = 'Accumulo table deletion (no connection) not False'
+        self.assertFalse(received, msg)
+
+    def test_exists_table_no_connection(self):
+        """Table exists check: no connection.
+        """
+        received = self._ds.exists_table(name='dodge')
+        msg = 'Table exists check (no connection) is not False'
+        self.assertFalse(received, msg)
+
+    def test_exists_table_no_table(self):
+        """Table exists check: no table.
+        """
+        self._ds.connect()
+
+        received = self._ds.exists_table(name='dodge')
+        msg = 'Table exists check (no table) is not False'
+        self.assertFalse(received, msg)
+
+    def test_exists_table(self):
+        """Table exists check.
+        """
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+
+        received = self._ds.exists_table(name=self._meta_table_name)
+        msg = 'Table exists check is not True'
+        self.assertTrue(received, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
 
     @classmethod
     def tearDownClass(cls):

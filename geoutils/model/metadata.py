@@ -26,7 +26,7 @@ class Metadata(geoutils.ModelBase):
             *name*: override the name of the Metadata table
 
         """
-        geoutils.ModelBase.__init__(self, connection, name)
+        super(Metadata, self).__init__(connection, name)
 
     @property
     def coord_cols(self):

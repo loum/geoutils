@@ -24,14 +24,13 @@ class TestModelThumb(unittest2.TestCase):
         cls._mock = geolib_mock.MockServer(conf)
         cls._mock.start()
 
-        cls._meta_table_name = 'meta_library'
-        cls._image_table_name = 'image_library'
         cls._thumb_table_name = 'thumb_library'
 
     @classmethod
     def setUp(cls):
         cls._ds = geoutils.Datastore()
-        cls._thumb = geoutils.model.Thumb(cls._ds.connect())
+        cls._thumb = geoutils.model.Thumb(connection=cls._ds.connect(),
+                                          name=cls._thumb_table_name)
 
     def test_init(self):
         """Initialise a :class:`geoutils.model.Thumb` object.
@@ -42,8 +41,13 @@ class TestModelThumb(unittest2.TestCase):
     def test_name(self):
         """Check the default table name.
         """
+        thumb = geoutils.model.Thumb(connection=None)
         msg = 'Default table name error'
-        self.assertEqual(self._thumb.name, 'thumb_library', msg)
+        self.assertEqual(thumb.name, 'thumb_library', msg)
+
+        # Clean up.
+        thumb = None
+        del thumb
 
     def test_query_thumb(self):
         """Attempt to query the thumb component from the datastore.
@@ -122,8 +126,6 @@ class TestModelThumb(unittest2.TestCase):
         """
         cls._mock.stop()
 
-        del cls._meta_table_name
-        del cls._image_table_name
         del cls._thumb_table_name
 
     @classmethod
