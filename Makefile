@@ -26,7 +26,9 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.tests:TestModelBase \
 	geoutils.model.tests:TestModelMetadata \
 	geoutils.model.tests:TestModelImage \
-	geoutils.model.tests:TestModelThumb
+	geoutils.model.tests:TestModelThumb \
+	geoutils.config.tests:TestConfig \
+	geoutils.config.tests:TestIngestConfig
 
 sdist:
 	$(PY) setup.py sdist

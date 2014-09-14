@@ -16,4 +16,4 @@ class NITF(geoutils.Standard):
 
     """
     def __init__(self, source_filename=None):
-        geoutils.Standard.__init__(self, source_filename=source_filename)
+        super(NITF, self).__init__(source_filename=source_filename)

@@ -39,7 +39,7 @@ class Image(geoutils.ModelBase):
         ``image_library`` table.
 
         """
-        geoutils.ModelBase.__init__(self, connection, name)
+        super(Image, self).__init__(connection, name)
 
     @property
     def hdfs_namenode(self):

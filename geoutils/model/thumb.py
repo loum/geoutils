@@ -22,7 +22,7 @@ class Thumb(geoutils.ModelBase):
         ``thumb_library`` table.
 
         """
-        geoutils.ModelBase.__init__(self, connection, name)
+        super(Thumb, self).__init__(connection, name)
 
     def query_thumb(self, key, img_format='JPEG'):
         """Query the metadata component from the datastore.

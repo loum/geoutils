@@ -31,7 +31,7 @@ class GeoingestDaemon(daemoniser.Daemon):
         """:class:`GeoingestDaemon` initialisation.
 
         """
-        daemoniser.Daemon.__init__(self, pidfile=pidfile)
+        super(GeoingestDaemon, self).__init__(pidfile=pidfile)
 
         self.filename = filename
         self.dry = dry
@@ -48,15 +48,14 @@ class GeoingestDaemon(daemoniser.Daemon):
         while not event.isSet():
             self.ingest(self.filename)
 
-            if not event.isSet():
-                if self.dry:
-                    print('Dry run iteration complete -- aborting')
-                    event.set()
-                elif self.batch:
-                    print('Batch run iteration complete -- aborting')
-                    event.set()
-                else:
-                    time.sleep(self.loop)
+            if self.dry:
+                print('Dry run iteration complete -- aborting')
+                event.set()
+            elif self.batch:
+                print('Batch run iteration complete -- aborting')
+                event.set()
+            else:
+                time.sleep(self.loop)
 
     def accumulo_connect(self):
         """Create a connection to the Accumulo datastore defined

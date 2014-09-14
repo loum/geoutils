@@ -29,7 +29,7 @@ class GeoinitDaemon(daemoniser.Daemon):
         """:class:`GeoinitDaemon` initialisation.
 
         """
-        daemoniser.Daemon.__init__(self, pidfile=pidfile)
+        super(GeoinitDaemon, self).__init__(pidfile=pidfile)
 
         self.force = force
         self.dry = dry
