@@ -4,9 +4,11 @@
 """
 __all__ = ["IngestDaemon"]
 
-import sys
+import os
 import signal
 import time
+import sys
+from multiprocessing import Process
 
 import geoutils
 import daemoniser
@@ -51,22 +53,46 @@ class IngestDaemon(daemoniser.Daemon):
         signal.signal(signal.SIGTERM, self._exit_handler)
 
         self.accumulo = self.accumulo_connect()
+        if self.accumulo.connection is None:
+            log.fatal('Datastore connection not detected: aborting')
+            sys.exit(1)
 
         file_to_process = None
         if self.filename is not None:
             file_to_process = self.filename
+            self.process(event, file_to_process)
+        else:
+            child_pids = []
+            for process in range(0, self.conf.threads):
+                proc = Process(target=self.process, args=(event, ))
+                proc.start()
+                child_pids.append(proc.pid)
 
+            while not event.isSet():
+                time.sleep(1)
+
+            for proc in child_pids:
+                os.kill(proc, signal.SIGTERM)
+
+    def process(self, event, file_to_process=None):
+        """TODO
+
+        """
         while not event.isSet():
+            if file_to_process is None:
+                file_to_process = self.source_file()
+
             if file_to_process is not None:
                 self.ingest(file_to_process, dry=self.dry)
 
             if self.dry:
-                print('Dry run iteration complete -- aborting')
+                print('Dry run iteration complete')
                 event.set()
             elif self.batch:
-                print('Batch run iteration complete -- aborting')
+                print('Batch run iteration complete')
                 event.set()
             else:
+                file_to_process = None
                 time.sleep(self.loop)
 
     def accumulo_connect(self):
@@ -115,7 +141,8 @@ class IngestDaemon(daemoniser.Daemon):
         """
         file_to_process = None
 
-        log.debug('Looking for files at: %s ...' % self.conf.inbound_dir)
+        log.debug('PID %s: source files at: %s' % (os.getpid(),
+                                                   self.conf.inbound_dir))
         for file_match in get_directory_files(self.conf.inbound_dir,
                                               file_filter='.*\.ntf$'):
             file_to_process = file_match
