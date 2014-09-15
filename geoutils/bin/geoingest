@@ -5,88 +5,9 @@
 
 import os
 import inspect
-import signal
-import time
 
 import daemoniser
 import geoutils
-
-
-class GeoingestDaemon(daemoniser.Daemon):
-    """:class:`GeoingestDaemon`
-
-    """
-    dry = False
-    batch = False
-    conf = None
-    loop = 5
-
-    def __init__(self,
-                 pidfile,
-                 filename=None,
-                 dry=False,
-                 batch=False,
-                 config=None):
-        """:class:`GeoingestDaemon` initialisation.
-
-        """
-        super(GeoingestDaemon, self).__init__(pidfile=pidfile)
-
-        self.filename = filename
-        self.dry = dry
-        self.batch = batch
-        self.conf = config
-        self.conf.parse_config()
-
-    def _start(self, event):
-        """Override the :meth:daemoniser.Daemon._start` method.
-
-        """
-        signal.signal(signal.SIGTERM, self._exit_handler)
-
-        self.accumulo = self.accumulo_connect()
-
-        while not event.isSet():
-            self.ingest(self.filename)
-
-            if self.dry:
-                print('Dry run iteration complete -- aborting')
-                event.set()
-            elif self.batch:
-                print('Batch run iteration complete -- aborting')
-                event.set()
-            else:
-                time.sleep(self.loop)
-
-    def accumulo_connect(self):
-        """Create a connection to the Accumulo datastore defined
-        within the environment's setting.py file.
-
-        """
-        datastore = geoutils.Datastore()
-        datastore.host = self.conf.accumulo_host
-        datastore.port = self.conf.accumulo_port
-        datastore.user = self.conf.accumulo_user
-        datastore.password = self.conf.accumulo_password
-
-        datastore.connect()
-
-        return datastore
-
-    def ingest(self, filename):
-        """Ingest *filename* into the Accumulo datatore.
-
-        **Args:**
-            *filename*: absolute path to the file to ingest
-
-        """
-        nitf = geoutils.NITF(source_filename=filename)
-        nitf.image_model.hdfs_namenode = self.conf.namenode_user
-        nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
-        nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
-        nitf.open()
-        hdfs_target_path = self.conf.namenode_target_path
-        self.accumulo.ingest(nitf(target_path=hdfs_target_path))
 
 
 def main():
@@ -105,13 +26,14 @@ def main():
     config = None
     if service.options.config is not None:
         config = geoutils.IngestConfig(service.options.config)
+        conf = config.parse_config()
 
     # OK, start processing.
-    ingestd = GeoingestDaemon(pidfile=service.pidfile,
-                              filename=command_line_file,
-                              dry=service.dry,
-                              batch=service.batch,
-                              config=config)
+    ingestd = geoutils.IngestDaemon(pidfile=service.pidfile,
+                                    filename=command_line_file,
+                                    dry=service.dry,
+                                    batch=service.batch,
+                                    config=conf)
 
     service.launch_command(ingestd, script_name)
 

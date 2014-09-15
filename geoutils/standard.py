@@ -38,6 +38,12 @@ class Standard(object):
         like construct that can be fed directly into a
         :class:`geoutils.Datastore` instance.
 
+        **Kwargs:**
+            *target_path*: destination HDFS path where the original
+            :attr:`filename` will be written to
+
+            *dry*: if ``True`` only simulate, do not execute
+
         **Returns:**
             a dictionary structure that can be fed into a
         :class:`geoutils.Datastore` ingest
@@ -206,8 +212,7 @@ class Standard(object):
             the destination file path.  Defaults to ``None`` which means
             current directory of target device.
 
-            *dry*: only report, do not execute
-
+            *dry*: if ``True`` only simulate, do not execute
 
         **Returns:**
             dictionary structure that represents an Accumulo

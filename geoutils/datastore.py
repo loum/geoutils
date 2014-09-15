@@ -240,16 +240,18 @@ class Datastore(object):
             self.connection.close()
             log.info('Proxy client connection closed')
 
-    def ingest(self, data):
+    def ingest(self, data, dry=False):
         """Write a record to the Accumulo datastore.
 
         **Args:**
             *data*: dictionary object of the data to ingest
 
-        **Returns:**
-            Boolean ``True`` on successful record creation.
+        **Kwargs:**
+            *dry*: if ``True`` only simulate, do not execute
 
-            Boolean ``False`` otherwise
+        **Returns:**
+            Boolean ``True`` on successful record creation.  Boolean
+            ``False`` otherwise
 
         """
         log.info('Ingesting data ...')
@@ -275,7 +277,10 @@ class Datastore(object):
                 family_values = value.get('cf').get('val')
                 self._ingest_family_values(family_values, mutation)
 
-                writer.add_mutation(mutation)
+                if not dry:
+                    writer.add_mutation(mutation)
+                else:
+                    log.info('Dry pass: mutation skipped')
                 writer.close()
 
                 ingest_status = True

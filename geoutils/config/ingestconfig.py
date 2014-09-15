@@ -1,4 +1,4 @@
-# pylint: disable=R0903,C0111,R0902
+# pylint: disable=R0902,R0903,R0904,C0111,W0142
 """The :class:`geoutils.IngestConfig` is the configuration parser for
 the GeoUtils ingest facility.
 
@@ -18,10 +18,13 @@ class IngestConfig(geoutils.Config):
     _accumulo_port = 42425
     _accumulo_user = 'root'
     _accumulo_password = str()
-    _namenode_host = 'localhost'
+    _namenode_host = None
     _namenode_port = 50070
     _namenode_user = None
-    _namenode_target_path = str()
+    _namenode_target_path = None
+    _threads = 5
+    _inbound_dir = None
+    _archive_dir = None
 
     def __init__(self, config_file=None):
         """:class:`geoutils.IngestConfig` initialisation.
@@ -93,6 +96,30 @@ class IngestConfig(geoutils.Config):
     def set_namenode_target_path(self, value):
         pass
 
+    @property
+    def threads(self):
+        return self._threads
+
+    @set_scalar
+    def set_threads(self, value):
+        pass
+
+    @property
+    def inbound_dir(self):
+        return self._inbound_dir
+
+    @set_scalar
+    def set_inbound_dir(self, value):
+        pass
+
+    @property
+    def archive_dir(self):
+        return self._archive_dir
+
+    @set_scalar
+    def set_archive_dir(self, value):
+        pass
+
     def parse_config(self):
         """Read config items from the configuration file.
 
@@ -124,7 +151,17 @@ class IngestConfig(geoutils.Config):
                    'var': 'namenode_user'},
                   {'section': 'hdfs_namenode',
                    'option': 'target_path',
-                   'var': 'namenode_target_path'}]
+                   'var': 'namenode_target_path'},
+                  {'section': 'ingest',
+                   'option': 'threads',
+                   'var': 'threads',
+                   'cast_type': 'int'},
+                  {'section': 'ingest',
+                   'option': 'inbound_dir',
+                   'var': 'inbound_dir'},
+                  {'section': 'ingest',
+                   'option': 'archive_dir',
+                   'var': 'archive_dir'}]
 
-        for kw in kwargs:
-            self.parse_scalar_config(**kw)
+        for kwarg in kwargs:
+            self.parse_scalar_config(**kwarg)

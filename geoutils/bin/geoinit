@@ -4,6 +4,7 @@
 """
 import os
 import inspect
+import sys
 
 import daemoniser
 import geoutils
@@ -30,7 +31,10 @@ class GeoinitDaemon(daemoniser.Daemon):
         self.force = force
         self.dry = dry
         self.conf = config
-        self.conf.parse_config()
+        if self.conf is None:
+            sys.exit('geoutils.conf file not defined')
+        else:
+            self.conf.parse_config()
 
     def _start(self, event):
         """Override the :meth:daemoniser.Daemon._start` method.
