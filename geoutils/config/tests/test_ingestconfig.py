@@ -9,7 +9,8 @@ import geoutils
 
 
 class TestIngestConfig(unittest2.TestCase):
-
+    """:class:`geoutils.IngestConfig` test cases.
+    """
     @classmethod
     def setUpClass(cls):
         cls._file = os.path.join('geoutils',
@@ -71,6 +72,26 @@ class TestIngestConfig(unittest2.TestCase):
         received = self._conf.namenode_target_path
         expected = 'tmp'
         msg = 'hdfs_namenode.target_path not as expected'
+        self.assertEqual(received, expected, msg)
+
+        received = self._conf.threads
+        expected = 10
+        msg = 'ingest.threads not as expected'
+        self.assertEqual(received, expected, msg)
+
+        received = self._conf.inbound_dir
+        expected = '/var/tmp/geoingest'
+        msg = 'ingest.inbound_dir not as expected'
+        self.assertEqual(received, expected, msg)
+
+        received = self._conf.archive_dir
+        expected = '/var/tmp/geoingest/archive'
+        msg = 'ingest.archive_dir not as expected'
+        self.assertEqual(received, expected, msg)
+
+        received = self._conf.thread_sleep
+        expected = 0.5
+        msg = 'ingest.thread_sleep not as expected'
         self.assertEqual(received, expected, msg)
 
     def tearDown(self):

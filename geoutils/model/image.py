@@ -149,17 +149,23 @@ class Image(geoutils.ModelBase):
 
         """
         status = False
+        cleansed_file = filename
+
+        # Strip off the trailing ".proc"
+        if filename.endswith('.proc'):
+            cleansed_file = os.path.splitext(filename)[0]
 
         # Work out our target path.
         target = None
         if target_path is None:
-            target = os.path.basename(filename)
+            target = os.path.basename(cleansed_file)
             # Strip the leading filesystem separator as this format
             # is required by Hadoop WebHDFS REST API.
             target = target.strip(os.sep)
         else:
-            target = os.path.join(target_path, os.path.basename(filename))
-        log.debug('HDFS target path: "%s"' % target)
+            target = os.path.join(target_path,
+                                  os.path.basename(cleansed_file))
+        log.debug('Target path: "%s"' % target)
 
         # OK, perform the write.
         uri_scheme = None
@@ -176,7 +182,7 @@ class Image(geoutils.ModelBase):
                 except requests.ConnectionError as err:
                     log.error('HDFS connection error: %s' % err)
         else:
-            log.info('Writing "%s" to local filesystem' % filename)
+            log.info('Writing "%s" to local filesystem' % cleansed_file)
             uri_scheme = 'file'
             status = move_file(filename, target, dry=dry)
 

@@ -38,6 +38,12 @@ class Standard(object):
         like construct that can be fed directly into a
         :class:`geoutils.Datastore` instance.
 
+        **Kwargs:**
+            *target_path*: destination HDFS path where the original
+            :attr:`filename` will be written to
+
+            *dry*: if ``True`` only simulate, do not execute
+
         **Returns:**
             a dictionary structure that can be fed into a
         :class:`geoutils.Datastore` ingest
@@ -52,6 +58,8 @@ class Standard(object):
 
         data = {}
         file_basename = os.path.basename(self._filename)
+        if file_basename.endswith('.proc'):
+            file_basename = os.path.splitext(file_basename)[0]
         data['row_id'] = os.path.splitext(file_basename)[0]
 
         data['tables'] = {}
@@ -206,8 +214,7 @@ class Standard(object):
             the destination file path.  Defaults to ``None`` which means
             current directory of target device.
 
-            *dry*: only report, do not execute
-
+            *dry*: if ``True`` only simulate, do not execute
 
         **Returns:**
             dictionary structure that represents an Accumulo
@@ -216,9 +223,7 @@ class Standard(object):
                 hdfs://jp2044lm-hdfs-nn01/tmp/i_3001a.ntf
 
         """
-        uri = self.image_model.hdfs_write(self.filename,
-                                          target_path,
-                                          dry)
+        uri = self.image_model.hdfs_write(self.filename, target_path, dry)
 
         return uri
 

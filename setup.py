@@ -72,6 +72,7 @@ setup(name='python-geoutils',
       url='',
       packages=['geoutils',
                 'geoutils.model',
-                'geoutils.config'],
+                'geoutils.config',
+                'geoutils.daemon'],
       package_dir={'geoutils': 'geoutils'},
       data_files=FILES)

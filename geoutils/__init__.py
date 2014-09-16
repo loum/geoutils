@@ -9,3 +9,4 @@ from geoutils.nitf import NITF
 from geoutils.config import Config
 from geoutils.config.initconfig import InitConfig
 from geoutils.config.ingestconfig import IngestConfig
+from geoutils.daemon.ingestdaemon import IngestDaemon
