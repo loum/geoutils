@@ -72,7 +72,6 @@ class IngestDaemon(daemoniser.Daemon):
 
             if not self.dry and not self.batch:
                 while not event.isSet():
-                    log.debug('Parent sleep')
                     time.sleep(1)
 
                 for proc in child_pids:
@@ -158,8 +157,7 @@ class IngestDaemon(daemoniser.Daemon):
         """
         file_to_process = None
 
-        log.debug('PID %s: source files at: %s' % (os.getpid(),
-                                                   self.conf.inbound_dir))
+        log.debug('Sourcing files at: %s' % self.conf.inbound_dir)
         for file_match in get_directory_files(self.conf.inbound_dir,
                                               file_filter='.*\.ntf$'):
             file_to_process = file_match
