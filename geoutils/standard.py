@@ -58,6 +58,8 @@ class Standard(object):
 
         data = {}
         file_basename = os.path.basename(self._filename)
+        if file_basename.endswith('.proc'):
+            file_basename = os.path.splitext(file_basename)[0]
         data['row_id'] = os.path.splitext(file_basename)[0]
 
         data['tables'] = {}
@@ -221,9 +223,7 @@ class Standard(object):
                 hdfs://jp2044lm-hdfs-nn01/tmp/i_3001a.ntf
 
         """
-        uri = self.image_model.hdfs_write(self.filename,
-                                          target_path,
-                                          dry)
+        uri = self.image_model.hdfs_write(self.filename, target_path, dry)
 
         return uri
 

@@ -25,6 +25,7 @@ class IngestConfig(geoutils.Config):
     _threads = 5
     _inbound_dir = None
     _archive_dir = None
+    _thread_sleep = 2.0
 
     def __init__(self, config_file=None):
         """:class:`geoutils.IngestConfig` initialisation.
@@ -120,6 +121,14 @@ class IngestConfig(geoutils.Config):
     def set_archive_dir(self, value):
         pass
 
+    @property
+    def thread_sleep(self):
+        return self._thread_sleep
+
+    @set_scalar
+    def set_thread_sleep(self, value):
+        pass
+
     def parse_config(self):
         """Read config items from the configuration file.
 
@@ -161,7 +170,11 @@ class IngestConfig(geoutils.Config):
                    'var': 'inbound_dir'},
                   {'section': 'ingest',
                    'option': 'archive_dir',
-                   'var': 'archive_dir'}]
+                   'var': 'archive_dir'},
+                  {'section': 'ingest',
+                   'option': 'thread_sleep',
+                   'var': 'thread_sleep',
+                   'cast_type': 'float'}]
 
         for kwarg in kwargs:
             self.parse_scalar_config(**kwarg)

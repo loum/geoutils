@@ -10,7 +10,8 @@ import tempfile
 import geoutils
 import geolib_mock
 from geosutils.files import (get_directory_files_list,
-                             remove_files)
+                             remove_files,
+                             copy_file)
 
 
 class TestModelImage(unittest2.TestCase):
@@ -130,6 +131,29 @@ class TestModelImage(unittest2.TestCase):
         received = self._image.hdfs_write(test_file,
                                           target_path=hdfs_dir,
                                           dry=True)
+        expected = 'file://%s/%s' % (hdfs_dir,
+                                     os.path.basename(test_file))
+        msg = 'no-HDFS host write error'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        remove_files(get_directory_files_list(hdfs_dir))
+        os.removedirs(hdfs_dir)
+
+    def test_hdfs_write_no_hdfs_host_proc_extension(self):
+        """Write file to a non-HDFS filesystem: proc extension.
+        """
+        hdfs_dir = tempfile.mkdtemp()
+        test_file = os.path.join('geoutils',
+                                  'tests',
+                                  'files',
+                                  'i_3001a.ntf')
+        test_proc = os.path.join(hdfs_dir,
+                                 os.path.basename(test_file + '.proc'))
+        copy_file(test_file, test_proc)
+
+        received = self._image.hdfs_write(test_proc,
+                                          target_path=hdfs_dir)
         expected = 'file://%s/%s' % (hdfs_dir,
                                      os.path.basename(test_file))
         msg = 'no-HDFS host write error'

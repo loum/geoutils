@@ -14,6 +14,7 @@ import geoutils
 import daemoniser
 from geosutils.files import get_directory_files
 from geosutils.log import log
+from geosutils.files import move_file
 
 
 class IngestDaemon(daemoniser.Daemon):
@@ -23,7 +24,6 @@ class IngestDaemon(daemoniser.Daemon):
     dry = False
     batch = False
     conf = None
-    loop = 5
 
     def __init__(self,
                  pidfile,
@@ -63,19 +63,33 @@ class IngestDaemon(daemoniser.Daemon):
             self.process(event, file_to_process)
         else:
             child_pids = []
-            for process in range(0, self.conf.threads):
+            for thread_count in range(self.conf.threads):
+                log.debug('Starting child thread %d of %d' %
+                          (thread_count + 1, self.conf.threads))
                 proc = Process(target=self.process, args=(event, ))
                 proc.start()
                 child_pids.append(proc.pid)
 
-            while not event.isSet():
-                time.sleep(1)
+            if not self.dry and not self.batch:
+                while not event.isSet():
+                    log.debug('Parent sleep')
+                    time.sleep(1)
 
-            for proc in child_pids:
-                os.kill(proc, signal.SIGTERM)
+                for proc in child_pids:
+                    os.kill(proc, signal.SIGTERM)
 
     def process(self, event, file_to_process=None):
-        """TODO
+        """Imgest thread wrapper.  Each call to this method is
+        effectively an ingest process.
+
+        **Args:**
+            *event*: a :mod:`threading.Event` based internal semaphore
+            that can be set via the :mod:`signal.signal.SIGTERM` signal
+            event to perform a function within the running proess.
+
+        **Kwargs:**
+            *file_to_process* override the file to process (will bypass
+            a file system search)
 
         """
         while not event.isSet():
@@ -93,7 +107,7 @@ class IngestDaemon(daemoniser.Daemon):
                 event.set()
             else:
                 file_to_process = None
-                time.sleep(self.loop)
+                time.sleep(self.conf.thread_sleep)
 
     def accumulo_connect(self):
         """Create a connection to the Accumulo datastore defined
@@ -120,7 +134,10 @@ class IngestDaemon(daemoniser.Daemon):
             *dry*: if ``True`` only simulate, do not execute
 
         """
-        nitf = geoutils.NITF(source_filename=filename)
+        # First, move the file into a "processing" state.
+        move_file(filename, filename + '.proc')
+
+        nitf = geoutils.NITF(source_filename=filename + '.proc')
         nitf.image_model.hdfs_namenode = self.conf.namenode_user
         nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
         nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
