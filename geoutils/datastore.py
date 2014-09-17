@@ -167,7 +167,7 @@ class Datastore(object):
         log.info('Initialising the image library table: "%s" ...' % name)
 
         if self.connection is not None:
-            if self.connection.table_exists(name):
+            if self.exists_table(name):
                 log.error('Image table "%s" already exists!' % name)
             else:
                 # Finally, create the table.
@@ -196,7 +196,7 @@ class Datastore(object):
         log.info('Deleting the image library table: "%s" ...' % name)
 
         if self.connection is not None:
-            if self.connection.table_exists(name):
+            if self.exists_table(name):
                 self.connection.delete_table(name)
                 status = True
             else:
@@ -262,7 +262,11 @@ class Datastore(object):
             log.error('Ingest error: no "row_id" defined')
         else:
             for table, value in data.get('tables').iteritems():
-                log.debug('Processing ingest for table: "%s"' % table)
+                log.info('Processing ingest for table: "%s"' % table)
+                if not self.exists_table(table):
+                    log.info('Ingest skipped')
+                    continue
+
                 writer = self._create_writer(table)
                 if writer is None:
                     break
