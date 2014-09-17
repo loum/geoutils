@@ -83,3 +83,31 @@ class ModelBase(object):
             results = self.connection.scan(table=table, cols=cols)
 
         return results
+
+    def doc_query(self, table, search_terms):
+        """Base method for a Accumulo table document based batch scan.
+
+        **Args:**
+            *table*: name of the table to scan
+
+        **Kwargs:**
+            *search_terms*: keys to use in the search
+
+        **Returns:**
+            Generator object that can be iterated over to display
+            the record's cell data
+
+        """
+        scan_ranges = [pyaccumulo.Range(srow='i_3001a', erow='i_3001a')]
+        iterators = [pyaccumulo.iterators.IntersectingIterator(priority=21,
+                                                               terms=search_terms)]
+        log.info('Querying table "%s" against search terms: "%s" ...' %
+                 (table, search_terms))
+
+        results = []
+        for e in self.connection.batch_scan(table=table,
+                                            scanranges=scan_ranges,
+                                            iterators=iterators):
+            results.append(e.cq)
+
+        return results
