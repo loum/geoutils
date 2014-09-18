@@ -117,7 +117,7 @@ class TestStandard(unittest2.TestCase):
                        'image': row_id,
                        'jitc': row_id},
                     'val': {
-                       'e': 'i_3001a'}}
+                       'e': row_id}}
         msg = 'Meta search structure result error'
         self.assertDictEqual(received, expected, msg)
 
@@ -294,6 +294,21 @@ class TestStandard(unittest2.TestCase):
         received = self._standard.build_document_map(meta_dict)
         msg = 'Metadata document map error: empty source'
         self.assertFalse(len(received), msg)
+
+    def test_get_shard(self):
+        """Generate a shard.
+        """
+        source = 'i_3001a'
+        received = self._standard.get_shard(source)
+        expected = 's01'
+        msg = 'Generated shard (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
+
+        source = 'i_6130e'
+        received = self._standard.get_shard(source)
+        expected = 's03'
+        msg = 'Generated shard (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
 
     @classmethod
     def tearDown(cls):

@@ -50,16 +50,17 @@ class TestModelMetasearch(unittest2.TestCase):
         """
         self._ds.init_table(self._meta_search_name)
 
-        received = self._search.query_metadata(key='i_3001a')
-        expected = {}
-        msg = 'Scan across empty table should return 0 cells'
-        self.assertDictEqual(received, expected, msg)
+        search_terms = ['checks', 'Airfield']
+        received = self._search.query_metadata(search_terms)
+        expected = []
+        msg = 'Free text metadata should not return results'
+        self.assertListEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_search_name)
 
-    def test_query_metadata_with_data(self):
-        """Attempt to query the metadata component from the datastore.
+    def test_query_metadata_free_text(self):
+        """Query the metadata: free text.
         """
         from geoutils.tests.files.ingest_data_03 import DATA
 
@@ -69,17 +70,15 @@ class TestModelMetasearch(unittest2.TestCase):
 
         search_terms = ['checks', 'Airfield']
         received = self._search.query_metadata(search_terms)
-        print('xxx: %s' % received)
-        #from geoutils.tests.results.meta_01 import META
-        #expected = META
-        #msg = 'Scan across table should return cells'
-        #self.assertDictEqual(received, expected, msg)
+        expected = ['i_3001a']
+        msg = 'Free text metadata should return results'
+        self.assertListEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_search_name)
 
-    def test_query_metadata_with_data_missing_row_id(self):
-        """Query metadata from the datastore: missing row_id.
+    def test_query_metadata_free_text_unmatched(self):
+        """Query the metadata free text: (unmatched).
         """
         from geoutils.tests.files.ingest_data_03 import DATA
 
@@ -87,34 +86,11 @@ class TestModelMetasearch(unittest2.TestCase):
 
         self._ds.ingest(DATA)
 
-        received = self._search.query_metadata(key='dodgy')
-        from geoutils.tests.results.meta_01 import META
-        expected = {}
-        msg = 'Scan across metadata table against dodgy row_id error'
-        self.assertDictEqual(received, expected, msg)
-
-        # Clean up.
-        self._ds.delete_table(self._meta_search_name)
-
-    def test_query_metadata_with_data_jsonify(self):
-        """Query the metadata component from the datastore: jsonify.
-        """
-        from geoutils.tests.files.ingest_data_03 import DATA
-
-        self._ds.init_table(self._meta_search_name)
-
-        self._ds.ingest(DATA)
-
-        received = self._search.query_metadata(key='i_3001a',
-                                             jsonify=True)
-        results_file = os.path.join('geoutils',
-                                    'tests',
-                                    'results',
-                                    'ingest_data_01.txt')
-        results_fh = open(results_file)
-        expected = results_fh.readline().rstrip()
-        msg = 'JSON results from metadata scan error'
-        self.assertEqual(received, expected, msg)
+        search_terms = ['banana', 'Airfield']
+        received = self._search.query_metadata(search_terms)
+        expected = []
+        msg = 'Free text metadata (unmatched) should NO return results'
+        self.assertListEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_search_name)

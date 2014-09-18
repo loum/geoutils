@@ -8,6 +8,7 @@
 """
 DATA = {
     'row_id': 'i_6130e',
+    'shard_id': 's03',
     'tables': {
         'meta_library': {
             'cf': {

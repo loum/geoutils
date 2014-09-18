@@ -14,6 +14,7 @@ from osgeo import gdal
 import geoutils
 import geoutils.model
 from geosutils.log import log
+from geosutils.utils import hashcode
 
 
 class Standard(object):
@@ -29,6 +30,7 @@ class Standard(object):
     _meta_model = geoutils.model.Metadata(None)
     _image_model = geoutils.model.Image(None)
     _thumb_model = geoutils.model.Thumb(None)
+    _meta_shards = 4
 
     def __init__(self, source_filename=None):
         self._filename = source_filename
@@ -63,6 +65,8 @@ class Standard(object):
             file_basename = os.path.splitext(file_basename)[0]
         row_id = os.path.splitext(file_basename)[0]
         data['row_id'] = row_id
+        shard_id = self.get_shard(row_id)
+        data['shard_id'] = shard_id
 
         data['tables'] = {}
 
@@ -90,7 +94,7 @@ class Standard(object):
         data['tables'][self.thumb_model.name]['cf']['cq'] = thumb_dimensions
         # Document Partitioned Indexing set as part of GDT-384.
         token_set = self.build_document_map(meta_structure['cq'])
-        metasearch = self._build_metasearch_data_struct(row_id,
+        metasearch = self._build_metasearch_data_struct(shard_id,
                                                         token_set)
         data['tables']['meta_search'] = metasearch
 
@@ -133,6 +137,14 @@ class Standard(object):
     @property
     def thumb_model(self):
         return self._thumb_model
+
+    @property
+    def meta_shards(self):
+        return self._meta_shards
+
+    @meta_shards.setter
+    def meta_shards(self):
+        return self._meta_shards
 
     def _build_meta_data_structure(self):
         """TODO
@@ -286,6 +298,14 @@ class Standard(object):
         log.info('Ingest metasearch structure build done')
 
         return data
+
+    def get_shard(self, source):
+        code = hashcode(source)
+        shard = "s%02d" % ((code & 0x0ffffffff) % self.meta_shards)
+
+        log.debug('Shard for source "%s": "%s"' % (source, shard))
+
+        return shard
 
     def _build_image_uri(self, target_path=None, dry=False):
         """Stores :attr:`filename` into a HDFS datastore

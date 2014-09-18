@@ -137,6 +137,7 @@ class IngestDaemon(daemoniser.Daemon):
         move_file(filename, filename + '.proc')
 
         nitf = geoutils.NITF(source_filename=filename + '.proc')
+        nitf.meta_shards = self.conf.shards
         nitf.image_model.hdfs_namenode = self.conf.namenode_user
         nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
         nitf.image_model.hdfs_namenode_user = self.conf.namenode_user

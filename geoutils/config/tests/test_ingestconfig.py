@@ -94,6 +94,11 @@ class TestIngestConfig(unittest2.TestCase):
         msg = 'ingest.thread_sleep not as expected'
         self.assertEqual(received, expected, msg)
 
+        received = self._conf.shards
+        expected = 10
+        msg = 'ingest.shards not as expected'
+        self.assertEqual(received, expected, msg)
+
     def tearDown(self):
         self._conf = None
         del self._conf
