@@ -94,9 +94,10 @@ class Standard(object):
         data['tables'][self.thumb_model.name]['cf']['cq'] = thumb_dimensions
         # Document Partitioned Indexing set as part of GDT-384.
         token_set = self.build_document_map(meta_structure['cq'])
-        metasearch = self._build_metasearch_data_struct(shard_id,
+        metasearch = self._build_metasearch_data_struct(row_id,
+                                                        shard_id,
                                                         token_set)
-        data['tables']['meta_search'] = metasearch
+        data['tables']['meta_search']= {'cf':  metasearch}
 
         log.info('Ingest data structure build done')
 
@@ -267,7 +268,7 @@ class Standard(object):
 
         return data
 
-    def _build_metasearch_data_struct(self, row_id, token_set):
+    def _build_metasearch_data_struct(self, row_id, shard_id, token_set):
         """Creates a Document Partitioned Indexed structure for
         the metadata component defined by the *token_set* document map.
 
@@ -289,7 +290,7 @@ class Standard(object):
         log.info('Building ingest metasearch component ...')
 
         data = {}
-        data['val'] = {'e': row_id}
+        data['val'] = {'e': shard_id}
 
         data['cq'] = {}
         for token in token_set:

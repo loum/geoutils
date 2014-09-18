@@ -103,12 +103,13 @@ class TestStandard(unittest2.TestCase):
         """Build the metasearch ingest data structure.
         """
         row_id = 'i_3001a'
+        shard_id = 's01'
         token_set = set(['geocentric',
                          'huachuca',
                          'i_3001a',
                          'image',
                          'jitc'])
-        args = (row_id, token_set)
+        args = (row_id, shard_id, token_set)
         received = self._standard._build_metasearch_data_struct(*args)
         expected = {'cq': {
                        'geocentric': row_id,
@@ -117,7 +118,7 @@ class TestStandard(unittest2.TestCase):
                        'image': row_id,
                        'jitc': row_id},
                     'val': {
-                       'e': row_id}}
+                       'e': shard_id}}
         msg = 'Meta search structure result error'
         self.assertDictEqual(received, expected, msg)
 

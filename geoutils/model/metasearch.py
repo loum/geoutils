@@ -37,21 +37,18 @@ class Metasearch(geoutils.ModelBase):
             the metadata component of *key* as a Python dictionary
             structure
 
-                {'i_3001a': {
-                    'coord=3': '32.9833334691,85.0002779135',
-                    'coord=1': '32.9833334691,84.9999998642',
+                {'metas': [
+                    'i_3001a',
                     ...
-                    'metadata': {
-                        'NITF_IDATIM': '19961217102630',
-                        'NITF_FSCLAS': 'U',
-                        'NITF_ISDGDT': '',
-                        ...}}}
+                    ]
+                }
 
         """
         terms = [term.lower() for term in search_terms if len(term) > 3]
         results = self.doc_query(self.name, terms)
 
+        metas = {'metas': []}
         for result in results:
-            log.info('result: %s' % result)
+            metas['metas'].append(result)
 
-        return results
+        return metas

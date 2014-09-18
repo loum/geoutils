@@ -70,9 +70,9 @@ class TestModelMetasearch(unittest2.TestCase):
 
         search_terms = ['checks', 'Airfield']
         received = self._search.query_metadata(search_terms)
-        expected = ['i_3001a']
+        expected = {'metas': ['i_3001a']}
         msg = 'Free text metadata should return results'
-        self.assertListEqual(received, expected, msg)
+        self.assertDictEqual(received, expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._meta_search_name)
