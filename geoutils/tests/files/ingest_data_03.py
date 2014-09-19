@@ -6,6 +6,35 @@ DATA = {
     'row_id': 'i_3001a',
     'shard_id': 's01',
     'tables': {
+        'meta_search': {
+            'cf': {
+                'cq': {
+                    '00000': 'i_3001a',
+                    '1024x1024': 'i_3001a',
+                    '19961217102630': 'i_3001a',
+                    '19971217102630': 'i_3001a',
+                    '5458': 'i_3001a',
+                    'airfield': 'i_3001a',
+                    'base': 'i_3001a',
+                    'bf01': 'i_3001a',
+                    'checks': 'i_3001a',
+                    'data': 'i_3001a',
+                    'fort': 'i_3001a',
+                    'geocentric': 'i_3001a',
+                    'huachuca': 'i_3001a',
+                    'i_3001a': 'i_3001a',
+                    'image': 'i_3001a',
+                    'jitc': 'i_3001a',
+                    'missing': 'i_3001a',
+                    'mono': 'i_3001a',
+                    'nitf02': 'i_3001a',
+                    'uncompressed': 'i_3001a',
+                    'unknown': 'i_3001a',
+                    'with': 'i_3001a'},
+                'val': {'e': 'i_3001a',
+                },
+            },
+        },
         'meta_library': {
             'cf': {
                 'cq': {

@@ -1,4 +1,4 @@
-# pylint: disable=R0904,C0103,W0212
+# pylint: disable=R0904,C0103,W0142,W0212
 """:class:`geoutils.Standard` tests.
 
 """
@@ -99,6 +99,29 @@ class TestStandard(unittest2.TestCase):
         msg = 'Image data structure result error'
         self.assertTrue(callable(received), msg)
 
+    def test_metasearch_data_structure(self):
+        """Build the metasearch ingest data structure.
+        """
+        row_id = 'i_3001a'
+        shard_id = 's01'
+        token_set = set(['geocentric',
+                         'huachuca',
+                         'i_3001a',
+                         'image',
+                         'jitc'])
+        args = (row_id, shard_id, token_set)
+        received = self._standard._build_metasearch_data_struct(*args)
+        expected = {'cq': {
+                       'geocentric': row_id,
+                       'huachuca': row_id,
+                       'i_3001a': row_id,
+                       'image': row_id,
+                       'jitc': row_id},
+                    'val': {
+                       'e': shard_id}}
+        msg = 'Meta search structure result error'
+        self.assertDictEqual(received, expected, msg)
+
     def test_callable_image_file_uri(self):
         """Invoke the geoutils.Standard object instance: image file URI.
         """
@@ -117,6 +140,27 @@ class TestStandard(unittest2.TestCase):
         msg = 'Callable Row ID error'
         self.assertEqual(received.get('row_id'), expected, msg)
         #print(received)
+
+        # Clean up.
+        remove_files(get_directory_files_list(target_dir))
+        os.removedirs(target_dir)
+        os.removedirs(source_dir)
+
+    def test_callable_image_file_uri_proc_file(self):
+        """Invoke the geoutils.Standard object instance: proc file.
+        """
+        target_dir = tempfile.mkdtemp()
+        source_dir = tempfile.mkdtemp()
+        source_file = os.path.join(source_dir,
+                                   os.path.basename(self._file + '.proc'))
+        copy_file(self._file, source_file)
+
+        self._standard.filename = source_file
+        self._standard.open()
+        received = self._standard(target_path=target_dir)
+        expected = 'i_3001a'
+        msg = 'Callable (proc file) Row ID error'
+        self.assertEqual(received.get('row_id'), expected, msg)
 
         # Clean up.
         remove_files(get_directory_files_list(target_dir))
@@ -184,6 +228,88 @@ class TestStandard(unittest2.TestCase):
         received = self._standard._build_image_uri(target_path='tmp')
         msg = 'Image library image URI schema error: dodgy HDFS host'
         self.assertIsNone(received, msg)
+
+    def test_build_document_map(self):
+        """Build a document map.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+        meta_dict = DATA['tables']['meta_library']['cf']['cq']
+
+        received = self._standard.build_document_map(meta_dict)
+        expected = ['00000',
+                    '1024x1024',
+                    '19961217102630',
+                    '19971217102630',
+                    '5458',
+                    'airfield',
+                    'base',
+                    'bf01',
+                    'checks',
+                    'data',
+                    'fort',
+                    'geocentric',
+                    'huachuca',
+                    'i_3001a',
+                    'image',
+                    'jitc',
+                    'missing',
+                    'mono',
+                    'nitf02',
+                    'uncompressed',
+                    'unknown',
+                    'with']
+        msg = 'Metadata document map error'
+        self.assertListEqual(sorted(list(received)), expected, msg)
+
+    def test_build_document_map_10_or_more_characters(self):
+        """Build a document map: 10 or more characters.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+        meta_dict = DATA['tables']['meta_library']['cf']['cq']
+
+        received = self._standard.build_document_map(meta_dict, length=9)
+        expected = ['19961217102630',
+                    '19971217102630',
+                    'geocentric',
+                    'uncompressed']
+        msg = 'Metadata document map error: 10 or more character length'
+        self.assertListEqual(sorted(list(received)), expected, msg)
+
+    def test_build_document_map_alternate_token(self):
+        """Build a document map: alternate_token
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+        meta_dict = DATA['tables']['meta_library']['cf']['cq']
+
+        received = self._standard.build_document_map(meta_dict,
+                                                     token='fil')
+        expected = ['i_3001a']
+        msg = 'Metadata document map error: alternate token'
+        self.assertListEqual(sorted(list(received)), expected, msg)
+
+    def test_build_document_map_empty_source(self):
+        """Build a document map: empty source
+        """
+        meta_dict = {}
+
+        received = self._standard.build_document_map(meta_dict)
+        msg = 'Metadata document map error: empty source'
+        self.assertFalse(len(received), msg)
+
+    def test_get_shard(self):
+        """Generate a shard.
+        """
+        source = 'i_3001a'
+        received = self._standard.get_shard(source)
+        expected = 's01'
+        msg = 'Generated shard (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
+
+        source = 'i_6130e'
+        received = self._standard.get_shard(source)
+        expected = 's03'
+        msg = 'Generated shard (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
 
     @classmethod
     def tearDown(cls):

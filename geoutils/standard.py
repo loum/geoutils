@@ -8,11 +8,13 @@ products and image-related products.
 __all__ = ["Standard"]
 
 import os
+import re
 from osgeo import gdal
 
 import geoutils
 import geoutils.model
 from geosutils.log import log
+from geosutils.utils import hashcode
 
 
 class Standard(object):
@@ -28,6 +30,7 @@ class Standard(object):
     _meta_model = geoutils.model.Metadata(None)
     _image_model = geoutils.model.Image(None)
     _thumb_model = geoutils.model.Thumb(None)
+    _meta_shards = 4
 
     def __init__(self, source_filename=None):
         self._filename = source_filename
@@ -37,6 +40,12 @@ class Standard(object):
         meta/image extaction process.  It will also construct a dictionary
         like construct that can be fed directly into a
         :class:`geoutils.Datastore` instance.
+
+        **Kwargs:**
+            *target_path*: destination HDFS path where the original
+            :attr:`filename` will be written to
+
+            *dry*: if ``True`` only simulate, do not execute
 
         **Returns:**
             a dictionary structure that can be fed into a
@@ -52,7 +61,12 @@ class Standard(object):
 
         data = {}
         file_basename = os.path.basename(self._filename)
-        data['row_id'] = os.path.splitext(file_basename)[0]
+        if file_basename.endswith('.proc'):
+            file_basename = os.path.splitext(file_basename)[0]
+        row_id = os.path.splitext(file_basename)[0]
+        data['row_id'] = row_id
+        shard_id = self.get_shard(row_id)
+        data['shard_id'] = shard_id
 
         data['tables'] = {}
 
@@ -78,6 +92,12 @@ class Standard(object):
         thumb_dimensions = {'x_coord_size': '300',
                             'y_coord_size': '300'}
         data['tables'][self.thumb_model.name]['cf']['cq'] = thumb_dimensions
+        # Document Partitioned Indexing set as part of GDT-384.
+        token_set = self.build_document_map(meta_structure['cq'])
+        metasearch = self._build_metasearch_data_struct(row_id,
+                                                        shard_id,
+                                                        token_set)
+        data['tables']['meta_search']= {'cf':  metasearch}
 
         log.info('Ingest data structure build done')
 
@@ -119,6 +139,14 @@ class Standard(object):
     def thumb_model(self):
         return self._thumb_model
 
+    @property
+    def meta_shards(self):
+        return self._meta_shards
+
+    @meta_shards.setter
+    def meta_shards(self):
+        return self._meta_shards
+
     def _build_meta_data_structure(self):
         """TODO
 
@@ -155,6 +183,52 @@ class Standard(object):
 
         return data
 
+    def build_document_map(self,
+                           source_meta,
+                           token='metadata=',
+                           length=3):
+        """Extract the original metadata components and prepare a
+        unique collection of words larger than *length* characters.
+        Typically, these are the keys within the schema that start with
+        ``metadata=*``.  However, token can be overriden with *token*.
+
+        **Args:**
+            *source*: dictionary of schema metadata components
+
+            *token*: the dictionary key delimiter that identifies
+            the original metadata components (less the programmatically
+            created components)
+
+            *length*: ignores document map elements less than or equal
+            to this number
+
+        **Returns:**
+            a Python ``set`` of unique words extracted from the
+            metadata values
+
+        """
+        log.debug('Creating metadata document map ...')
+
+        # Strip out all of the metdata specific keys.
+        meta_keys = [k for k in source_meta.keys() if k.startswith(token)]
+        meta = dict((re.sub('^%s' % token, '', k),
+                    source_meta[k]) for k in meta_keys)
+
+
+        # Strip out all short values and split on sequences of
+        # alphanumeric characters.
+        ok_content = {}
+        for meta_key, value in meta.iteritems():
+            if len(value) > length:
+                ok_content[meta_key] = re.split('[^\w]+', value.lower())
+
+        doc_set = None
+        content = ok_content.values()
+        doc_set = set([v for vals in content for v in vals if len(v) > length])
+        log.debug('Metadata document map done')
+
+        return doc_set
+
     def _build_image_data_structure(self, downsample=None, thumb=False):
         """Create a reference to an image extraction process that is
         associated with the image library's schema image/thumb component.
@@ -172,7 +246,7 @@ class Standard(object):
 
         **Returns:**
             dictionary structure that represents an Accumulo
-            family/value structure of the form::
+            family/value structure in the form::
 
                 {'val: {'<thumb|image>': <method>}
 
@@ -194,6 +268,46 @@ class Standard(object):
 
         return data
 
+    def _build_metasearch_data_struct(self, row_id, shard_id, token_set):
+        """Creates a Document Partitioned Indexed structure for
+        the metadata component defined by the *token_set* document map.
+
+        **Args:**
+            *row_id*: the Accumulo row_id
+
+            *token_set*: a Python ``set`` of words
+
+        **Returns:**
+            dictionary structure that represents an Accumulo
+            family/value structure in the form::
+
+                {'cq': {<token_01>: <row_id>,
+                        <token_02>: <row_id>,
+                        ...,},
+                 'val': {'e': <row_id>}}
+
+        """
+        log.info('Building ingest metasearch component ...')
+
+        data = {}
+        data['val'] = {'e': shard_id}
+
+        data['cq'] = {}
+        for token in token_set:
+            data['cq'][token] = row_id
+
+        log.info('Ingest metasearch structure build done')
+
+        return data
+
+    def get_shard(self, source):
+        code = hashcode(source)
+        shard = "s%02d" % ((code & 0x0ffffffff) % self.meta_shards)
+
+        log.debug('Shard for source "%s": "%s"' % (source, shard))
+
+        return shard
+
     def _build_image_uri(self, target_path=None, dry=False):
         """Stores :attr:`filename` into a HDFS datastore
         and builds the resultant URI into the image library schema's
@@ -206,19 +320,16 @@ class Standard(object):
             the destination file path.  Defaults to ``None`` which means
             current directory of target device.
 
-            *dry*: only report, do not execute
-
+            *dry*: if ``True`` only simulate, do not execute
 
         **Returns:**
             dictionary structure that represents an Accumulo
-            column family/qualifier structure of the form::
+            column family/qualifier structure in the form::
 
                 hdfs://jp2044lm-hdfs-nn01/tmp/i_3001a.ntf
 
         """
-        uri = self.image_model.hdfs_write(self.filename,
-                                          target_path,
-                                          dry)
+        uri = self.image_model.hdfs_write(self.filename, target_path, dry)
 
         return uri
 

@@ -1,4 +1,4 @@
-# pylint: disable=R0903,C0111,R0902
+# pylint: disable=R0903,C0111,R0902,W0142
 """The :class:`geoutils.ModelBase` is the base construct for the
 Accumulo models.
 
@@ -81,5 +81,35 @@ class ModelBase(object):
                                            cols=cols)
         else:
             results = self.connection.scan(table=table, cols=cols)
+
+        return results
+
+    def doc_query(self, table, search_terms):
+        """Base method for a Accumulo table document based batch scan.
+
+        **Args:**
+            *table*: name of the table to scan
+
+        **Kwargs:**
+            *search_terms*: keys to use in the search
+
+        **Returns:**
+            Generator object that can be iterated over to display
+            the record's cell data
+
+        """
+        # This range aligns with the shard code.
+        scan_ranges = [pyaccumulo.Range(srow='s', erow='t')]
+        kwargs = {'priority': 21,
+                  'terms': search_terms}
+        iterators = [pyaccumulo.iterators.IntersectingIterator(**kwargs)]
+        log.info('Querying table "%s" against search terms: "%s" ...' %
+                 (table, search_terms))
+
+        results = []
+        for record in self.connection.batch_scan(table=table,
+                                                 scanranges=scan_ranges,
+                                                 iterators=iterators):
+            results.append(record.cq)
 
         return results

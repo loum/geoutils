@@ -56,6 +56,7 @@ class Datastore(object):
     _user = 'root'
     _password = ''
     _meta = geoutils.model.Metadata(None)
+    _meta_search = geoutils.model.Metasearch(None)
     _image = geoutils.model.Image(None)
     _thumb = geoutils.model.Thumb(None)
 
@@ -104,6 +105,10 @@ class Datastore(object):
         return self._meta
 
     @property
+    def meta_search(self):
+        return self._meta_search
+
+    @property
     def image(self):
         return self._image
 
@@ -148,6 +153,7 @@ class Datastore(object):
                                                   user=self.user,
                                                   password=self.password)
             self.meta.connection = self.connection
+            self.meta_search.connection = self.connection
             self.image.connection = self.connection
             self.thumb.connection = self.connection
         except (TTransportException,
@@ -167,7 +173,7 @@ class Datastore(object):
         log.info('Initialising the image library table: "%s" ...' % name)
 
         if self.connection is not None:
-            if self.connection.table_exists(name):
+            if self.exists_table(name):
                 log.error('Image table "%s" already exists!' % name)
             else:
                 # Finally, create the table.
@@ -196,7 +202,7 @@ class Datastore(object):
         log.info('Deleting the image library table: "%s" ...' % name)
 
         if self.connection is not None:
-            if self.connection.table_exists(name):
+            if self.exists_table(name):
                 self.connection.delete_table(name)
                 status = True
             else:
@@ -240,33 +246,46 @@ class Datastore(object):
             self.connection.close()
             log.info('Proxy client connection closed')
 
-    def ingest(self, data):
+    def ingest(self, data, dry=False):
         """Write a record to the Accumulo datastore.
 
         **Args:**
             *data*: dictionary object of the data to ingest
 
-        **Returns:**
-            Boolean ``True`` on successful record creation.
+        **Kwargs:**
+            *dry*: if ``True`` only simulate, do not execute
 
-            Boolean ``False`` otherwise
+        **Returns:**
+            Boolean ``True`` on successful record creation.  Boolean
+            ``False`` otherwise
 
         """
         log.info('Ingesting data ...')
         ingest_status = False
 
         row_id = data.get('row_id')
+        shard_id = data.get('shard_id')
         if row_id is None:
             log.error('Ingest error: no "row_id" defined')
         else:
             for table, value in data.get('tables').iteritems():
-                log.debug('Processing ingest for table: "%s"' % table)
+                log.info('Processing ingest for table: "%s"' % table)
+                if not self.exists_table(table):
+                    log.info('Ingest skipped')
+                    continue
+
                 writer = self._create_writer(table)
                 if writer is None:
                     break
 
-                log.info('Creating mutation for Row ID: "%s"' % row_id)
-                mutation = pyaccumulo.Mutation(row_id)
+                if table == self.meta_search.name:
+                    ingest_row_id = shard_id
+                else:
+                    ingest_row_id = row_id
+
+                log.info('Creating mutation for Row ID: "%s"' %
+                         ingest_row_id)
+                mutation = pyaccumulo.Mutation(ingest_row_id)
 
                 family_qualifiers = value.get('cf').get('cq')
                 self._ingest_family_qualifiers(family_qualifiers,
@@ -275,7 +294,10 @@ class Datastore(object):
                 family_values = value.get('cf').get('val')
                 self._ingest_family_values(family_values, mutation)
 
-                writer.add_mutation(mutation)
+                if not dry:
+                    writer.add_mutation(mutation)
+                else:
+                    log.info('Dry pass: mutation skipped')
                 writer.close()
 
                 ingest_status = True

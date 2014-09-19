@@ -24,6 +24,7 @@ class TestDatastore(unittest2.TestCase):
         cls._mock.start()
 
         cls._meta_table_name = 'meta_library'
+        cls._metasearch_table_name = 'meta_search'
         cls._image_table_name = 'image_library'
         cls._thumb_table_name = 'thumb_library'
 
@@ -153,6 +154,51 @@ class TestDatastore(unittest2.TestCase):
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
 
+    def test_ingest_with_metasearch(self):
+        """Ingest the metadata component: with metasearch.
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         'image_stream.out')
+        image_fh = open(image_stream_file, 'rb')
+
+        thumb_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
+        thumb_fh = open(thumb_stream_file, 'rb')
+
+        from geoutils.tests.files.ingest_data_02 import DATA
+        image_tbl = self._image_table_name
+        thumb_tbl = self._thumb_table_name
+        table = DATA['tables']
+        table[image_tbl] = {'cf': {'cq': {'x_coord_size': '1024',
+                                          'y_coord_size': '1024'},
+                                   'val': {'image': image_fh.read}}}
+        table[thumb_tbl] = {'cf': {'cq': {'x_coord_size': '300',
+                                          'y_coord_size': '300'},
+                                   'val': {'image': thumb_fh.read}}}
+
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+        self._ds.init_table(self._metasearch_table_name)
+        self._ds.init_table(self._image_table_name)
+        self._ds.init_table(self._thumb_table_name)
+
+        received = self._ds.ingest(DATA)
+        msg = 'Ingest status with datastore connection not True'
+        self.assertTrue(received, msg)
+
+        # Clean up.
+        DATA['tables'].pop(self._image_table_name, None)
+        DATA['tables'].pop(self._thumb_table_name, None)
+        image_fh.close()
+        self._ds.delete_table(self._meta_table_name)
+        self._ds.delete_table(self._metasearch_table_name)
+        self._ds.delete_table(self._image_table_name)
+        self._ds.delete_table(self._thumb_table_name)
+
     def test_ingest_val_column_not_callable(self):
         """Ingest: value column not a callable.
         """
@@ -204,6 +250,36 @@ class TestDatastore(unittest2.TestCase):
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
 
+    def test_ingest_from_file_document_partioned_index(self):
+        """Attempt to ingest from NITF file.
+        """
+        ntf_file = os.path.join('geoutils',
+                                'tests',
+                                'files',
+                                'i_3001a.ntf')
+
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+        self._ds.init_table(self._metasearch_table_name)
+        self._ds.init_table(self._image_table_name)
+        self._ds.init_table(self._thumb_table_name)
+
+        standard = geoutils.Standard(source_filename=ntf_file)
+        standard.open()
+        self._ds.ingest(standard(dry=True))
+
+        # If you want to ingest some sample data into the proxy server
+        # and block (so that you can connect via the client) then
+        # uncomment the following two lines.
+        # import time
+        # time.sleep(1000)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+        self._ds.delete_table(self._metasearch_table_name)
+        self._ds.delete_table(self._image_table_name)
+        self._ds.delete_table(self._thumb_table_name)
+
     def test_delete_table_no_connection(self):
         """Delete an Accumulo table: no connection.
         """
@@ -240,6 +316,11 @@ class TestDatastore(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
+    def test_index(self):
+        """Index creating mutation.
+        """
+        pass
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)
@@ -247,6 +328,7 @@ class TestDatastore(unittest2.TestCase):
         cls._mock.stop()
 
         del cls._meta_table_name
+        del cls._metasearch_table_name
         del cls._image_table_name
         del cls._thumb_table_name
 

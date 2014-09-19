@@ -146,6 +146,9 @@ class Metadata(object):
             log.debug('Driver: %s' % str(self.driver))
 
             self.file = os.path.basename(dataset.GetFileList()[0])
+            # Strip off the trailing ".proc"
+            if self.file.endswith('.proc'):
+                self.file = os.path.splitext(self.file)[0]
             log.debug('File: %s' % str(self.file))
 
             self.x_coord_size = dataset.RasterXSize
