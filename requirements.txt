@@ -9,4 +9,4 @@ python-pywebhdfs==0.2.3
 nose==1.1.2
 unittest2==0.5.1
 coverage==3.7
-python-imaging==1.1.6
+imaging==1.1.6
