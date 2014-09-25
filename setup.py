@@ -64,8 +64,6 @@ FILES = find_data_files('doc/build/',
                         recursive=True,
                         target_dir='doc/build')
 
-PYPI_MIRROR = 'http://repo.corp.f7:8081/artifactory/pip-geospatial-local'
-
 setup(name='python-geoutils',
       version=VERSION,
       description='GeoUtils',
@@ -80,9 +78,9 @@ setup(name='python-geoutils',
                         'pywebhdfs==0.2.3',
                         'nose==1.1.2',
                         'unittest2==0.5.1',
+                        'sphinx==1.0.8',
                         'coverage==3.7',
                         'shapely==1.4.1'],
-      dependency_links = [PYPI_MIRROR],
       packages=['geoutils',
                 'geoutils.model',
                 'geoutils.config',
