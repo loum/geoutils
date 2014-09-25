@@ -175,6 +175,12 @@ class Standard(object):
                                                image_boundary[0]))
             count += 1
 
+        raw_image_centroid = self.meta.calculate_centroid(lat_long=True)
+        image_centroid = self.meta.reproject_coords([raw_image_centroid])
+        if len(image_centroid):
+            data['cq']['center'] = ('%s,%s' % (image_centroid[0][1],
+                                            image_centroid[0][0]))
+
         for meta_key in self.meta.metadata:
             meta_value = self.meta.metadata[meta_key]
             data['cq']['metadata=%s' % meta_key] = meta_value
