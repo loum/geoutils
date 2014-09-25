@@ -5,7 +5,7 @@ import os
 import glob
 import fnmatch
 import shutil
-from distutils.core import setup
+from setuptools import setup
 
 VERSION = '0.0.0'
 
@@ -64,12 +64,26 @@ FILES = find_data_files('doc/build/',
                         recursive=True,
                         target_dir='doc/build')
 
+PYPI_MIRROR = 'http://repo.corp.f7:8081/artifactory/pip-geospatial-local'
+
 setup(name='python-geoutils',
       version=VERSION,
       description='GeoUtils',
       author='Lou Markovski',
       author_email='lou.markovski@gmail.com',
       url='',
+      install_requires=['python-geosutils==0.0.6',
+                        'python-daemoniser==0.0.0',
+                        'python-geolib-mock==0.0.0',
+                        'pyaccumulo==1.5.0.6.dev14',
+                        'requests==1.1.0',
+                        'python-pywebhdfs==0.2.3',
+                        'nose==1.1.2',
+                        'unittest2==0.5.1',
+                        'coverage==3.7',
+                        'imaging==1.1.6',
+                        'shapely==1.4.1'],
+      dependency_links = [PYPI_MIRROR],
       packages=['geoutils',
                 'geoutils.model',
                 'geoutils.config',
