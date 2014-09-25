@@ -8,6 +8,7 @@ __all__ = ["Metadata"]
 
 from osgeo import osr
 import os
+import shapely.geometry
 
 from geosutils.log import log
 
@@ -189,25 +190,85 @@ class Metadata(object):
 
         for x_point in x_points:
             for y_point in y_points:
-                corner_x = (self.geoxform[0] +
-                            (x_point * self.geoxform[1]) +
-                            (y_point * self.geoxform[2]))
-
-                corner_y = (self.geoxform[3] +
-                            (x_point * self.geoxform[4]) +
-                            (y_point * self.geoxform[5]))
-
-                extents.append([corner_x, corner_y])
+                corner = self.point_to_lat_long((x_point, y_point))
+                extents.append(corner)
                 log.debug('(X, Y) extents: (%.16f, %.16f)' %
-                          (corner_x, corner_y))
-
+                          (corner[0], corner[1]))
             y_points.reverse()
 
         return extents
 
+    def calculate_centroid(self, lat_long=False):
+        """Calculate the center coordinates of the image defined
+        by its :attr:`geoutils.Metadata.x_coord_size` and
+         :attr:`geoutils.Metadata.y_coord_size` coordinates.
+
+        Treats the image extents as a polygon and reduces the problem
+        domain to a simple geometric evaluation.
+
+        Centroid value is returned as a (X, Y) point unless
+        *lat_long* is set in which case it will be converted to a
+        longitude, latitude set.
+
+        **Kwargs:**
+            *lat_long*: transform the centroid from (X, Y) point to
+            longitude, latitude
+
+        **Returns:**
+            A tuple structure representing the image's centroid
+
+        """
+        log.debug('Calculating center coordinate from geotransform: %s' %
+                   str(self.geoxform))
+
+        polygon_points = ((0, 0),
+                          (self.x_coord_size, 0),
+                          (self.x_coord_size, self.y_coord_size),
+                          (0, self.y_coord_size))
+        poly = shapely.geometry.Polygon(polygon_points)
+        centroid_point = (poly.centroid.x, poly.centroid.y)
+        log.info('Centroid point (X, Y): %s' % str(centroid_point))
+
+        if lat_long:
+            centroid_point = tuple(self.point_to_lat_long(centroid_point))
+            log.info('Centroid to lat/long (X, Y): %s' %
+                     str(centroid_point))
+
+        return centroid_point
+
+    def point_to_lat_long(self, point):
+        """Convert raster positions (in pixel/line coordinates) provided
+        by *point* to georeferenced coordinates based on an affine
+        transform.
+
+        The affine transform consists of six coefficients provided by
+        :attr:`geoutils.Metadata.geoxform` which maps pixel/line
+        coordinates into georeferenced space.  The algorithm
+        is detailed `here <http://www.gdal.org/gdal_datamodel.html>`_
+
+        **Args:**
+            *point*: tuple that represents the pixel/line coordinates
+            of the point to transform.  For example::
+
+                (512.0, 512.0)
+
+        **Returns:**
+            longitude/latitude translation as a iterator (list) structure
+
+        """
+        longitude = (self.geoxform[0] +
+                     (point[0] * self.geoxform[1]) +
+                     (point[1] * self.geoxform[2]))
+
+        latitude = (self.geoxform[3] +
+                    (point[0] * self.geoxform[4]) +
+                    (point[1] * self.geoxform[5]))
+
+        return [longitude, latitude]
+
     def reproject_coords(self, extents):
         """Reproject a list of X, Y coordinates provided by *extents*.
-        Typically, *extents* will be a list of 4 XY coordinates
+        Typically, *extents* will be a list of 4 X, Y coordinates
         (themselves a 2-element list construct) similar to the following::
 
         >>> import pprint

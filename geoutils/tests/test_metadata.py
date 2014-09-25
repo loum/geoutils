@@ -135,6 +135,51 @@ class TestMetadata(unittest2.TestCase):
         nitf = None
         del nitf
 
+    def test_calculate_centroid_as_point(self):
+        """Calculate the centroid coordinates: point.
+        """
+        nitf = geoutils.NITF(source_filename=self._file)
+        nitf.open()
+        nitf.meta.extract_meta(nitf.dataset)
+        received = nitf.meta.calculate_centroid()
+        expected = (512.0, 512.0)
+        msg = 'Centroid calculation error: point'
+        self.assertTupleEqual(received, expected, msg)
+
+        # Clean up.
+        nitf = None
+        del nitf
+
+    def test_calculate_centroid_as_lat_long(self):
+        """Calculate the centroid coordinates: lat/long.
+        """
+        nitf = geoutils.NITF(source_filename=self._file)
+        nitf.open()
+        nitf.meta.extract_meta(nitf.dataset)
+        received = nitf.meta.calculate_centroid(lat_long=True)
+        expected = (85.000138888888884, 32.98319444444445)
+        msg = 'Centroid calculation error: lat/long'
+        self.assertTupleEqual(received, expected, msg)
+
+        # Clean up.
+        nitf = None
+        del nitf
+
+    def test_point_to_lat_long(self):
+        """Convert point to latitude/longitude.
+        """
+        nitf = geoutils.NITF(source_filename=self._file)
+        nitf.open()
+        nitf.meta.extract_meta(nitf.dataset)
+        received = nitf.meta.point_to_lat_long((512, 512))
+        expected = [85.000138888888884, 32.98319444444445]
+        msg = 'Point to lat/long calculation error'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        nitf = None
+        del nitf
+
     def test_reproject_coords(self):
         """Reproject a set of X-Y coordinates.
         """
