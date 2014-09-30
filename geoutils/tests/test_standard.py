@@ -311,6 +311,40 @@ class TestStandard(unittest2.TestCase):
         msg = 'Generated shard (%s) incorrect' % source
         self.assertEqual(expected, received, msg)
 
+    def test_get_stripe_token(self):
+        """Generate a stripe_token.
+        """
+        # Set a new stripe value.
+        old_spatial_stripes = self._standard.spatial_stripes
+        self._standard.spatial_stripes = 100
+
+        source = 'i_3001a'
+        received = self._standard.get_stripe_token(source)
+        expected = '0021'
+        msg = 'Generated stripe_token (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
+
+        source = 'i_6130e'
+        received = self._standard.get_stripe_token(source)
+        expected = '0031'
+        msg = 'Generated stripe_token (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
+
+        # Restore the default.
+        self._standard.spatial_stripes = old_spatial_stripes
+
+        source = 'i_3001a'
+        received = self._standard.get_stripe_token(source)
+        expected = '0000'
+        msg = 'Generated stripe_token (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
+
+        source = 'i_6130e'
+        received = self._standard.get_stripe_token(source)
+        expected = '0000'
+        msg = 'Generated stripe_token (%s) incorrect' % source
+        self.assertEqual(expected, received, msg)
+
     @classmethod
     def tearDown(cls):
         cls._standard = None

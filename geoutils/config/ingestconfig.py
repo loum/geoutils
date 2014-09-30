@@ -7,7 +7,8 @@ __all__ = ["IngestConfig"]
 
 
 import geoutils
-from geosutils.setter import set_scalar
+from geosutils.setter import (set_scalar,
+                              set_list)
 
 
 class IngestConfig(geoutils.Config):
@@ -27,6 +28,9 @@ class IngestConfig(geoutils.Config):
     _archive_dir = None
     _thread_sleep = 2.0
     _shards = 4
+    _spatial_order = ['stripe', 'geohash', 'reverse_time']
+    _spatial_stripes = 1
+    _stripes = 1
 
     def __init__(self, config_file=None):
         """:class:`geoutils.IngestConfig` initialisation.
@@ -138,6 +142,22 @@ class IngestConfig(geoutils.Config):
     def set_shards(self, value):
         pass
 
+    @property
+    def spatial_order(self):
+        return self._spatial_order
+
+    @set_list
+    def set_spatial_order(self, values=None):
+        pass
+
+    @property
+    def spatial_stripes(self):
+        return self._spatial_stripes
+
+    @set_scalar
+    def set_spatial_stripes(self, value):
+        pass
+
     def parse_config(self):
         """Read config items from the configuration file.
 
@@ -187,6 +207,14 @@ class IngestConfig(geoutils.Config):
                   {'section': 'ingest',
                    'option': 'shards',
                    'var': 'shards',
+                   'cast_type': 'int'},
+                  {'section': 'spatial',
+                   'option': 'order',
+                   'var': 'spatial_order',
+                   'is_list': True},
+                  {'section': 'spatial',
+                   'option': 'stripes',
+                   'var': 'spatial_stripes',
                    'cast_type': 'int'}]
 
         for kwarg in kwargs:

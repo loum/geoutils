@@ -31,6 +31,7 @@ class Standard(object):
     _image_model = geoutils.model.Image(None)
     _thumb_model = geoutils.model.Thumb(None)
     _meta_shards = 4
+    _spatial_stripes = 1
 
     def __init__(self, source_filename=None):
         self._filename = source_filename
@@ -144,8 +145,16 @@ class Standard(object):
         return self._meta_shards
 
     @meta_shards.setter
-    def meta_shards(self):
-        return self._meta_shards
+    def meta_shards(self, value):
+        self._meta_shards = value
+
+    @property
+    def spatial_stripes(self):
+        return self._spatial_stripes
+
+    @spatial_stripes.setter
+    def spatial_stripes(self, value):
+        self._spatial_stripes = value
 
     def _build_meta_data_structure(self):
         """TODO
@@ -313,6 +322,16 @@ class Standard(object):
         log.debug('Shard for source "%s": "%s"' % (source, shard))
 
         return shard
+
+    def get_stripe_token(self, source):
+        code = hashcode(source)
+        stripe_token = ((code & 0x0ffffffff) % self.spatial_stripes)
+        stripe_token = str(stripe_token).zfill(4)
+
+        log.debug('Stripe token for source "%s": "%s"' %
+                  (source, stripe_token))
+
+        return stripe_token
 
     def _build_image_uri(self, target_path=None, dry=False):
         """Stores :attr:`filename` into a HDFS datastore

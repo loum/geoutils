@@ -99,6 +99,16 @@ class TestIngestConfig(unittest2.TestCase):
         msg = 'ingest.shards not as expected'
         self.assertEqual(received, expected, msg)
 
+        received = self._conf.spatial_order
+        expected = ['geohash', 'reverse_time' ,'stripe']
+        msg = 'spatial.order not as expected'
+        self.assertListEqual(received, expected, msg)
+
+        received = self._conf.spatial_stripes
+        expected = 10
+        msg = 'spatial.stripes not as expected'
+        self.assertEqual(received, expected, msg)
+
     def tearDown(self):
         self._conf = None
         del self._conf
