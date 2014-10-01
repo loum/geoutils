@@ -6,3 +6,4 @@ from test_metadata import TestMetadata
 from test_geoimage import TestGeoImage
 from test_datastore import TestDatastore
 from test_modelbase import TestModelBase
+from test_schema import TestSchema

@@ -200,4 +200,6 @@ class Image(geoutils.ModelBase):
                         'sep': os.sep,
                         'target': target})
 
+        log.info('HDFS write URI: "%s"' % uri)
+
         return uri
