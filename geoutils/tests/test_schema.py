@@ -129,7 +129,7 @@ class TestSchema(unittest2.TestCase):
         meta_dict = DATA['tables']['meta_library']['cf']['cq']
 
         received = self._schema.build_document_map(meta_dict,
-                                                     token='fil')
+                                                   token='fil')
         expected = ['i_3001a']
         msg = 'Metadata document map error: alternate token'
         self.assertListEqual(sorted(list(received)), expected, msg)
@@ -153,20 +153,53 @@ class TestSchema(unittest2.TestCase):
                          'i_3001a',
                          'image',
                          'jitc'])
-        self._schema.source_id = 'i_3001a'
-        self._schema.shard_id = 's01'
+        self._schema.source_id = row_id
+        self._schema.shard_id = shard_id
         self._schema.build_metasearch(token_set)
-        received = self._schema.data['tables']['meta_search']['cf']
-        expected = {'cq': {
-                       'geocentric': row_id,
-                       'huachuca': row_id,
-                       'i_3001a': row_id,
-                       'image': row_id,
-                       'jitc': row_id},
-                    'val': {
-                       'e': shard_id}}
+        received = self._schema.data['tables']['meta_search']
+        expected = {'row_id': 's01',
+                    'cf': {
+                        'cq': {
+                            'geocentric': row_id,
+                            'huachuca': row_id,
+                            'i_3001a': row_id,
+                            'image': row_id,
+                            'jitc': row_id},
+                        'val': {
+                             'e': shard_id}}}
         msg = 'Meta search structure result error'
         self.assertDictEqual(received, expected, msg)
+
+    def test_build_meta_spatial_index(self):
+        """Build the meta spatial index ingest data structure.
+        """
+        self._schema.source_id = 'i_3001a'
+
+        kwargs = {'index_table': 'image_spatial_index',
+                  'point': '32.9831944444,85.0001388889',
+                  'source_date': '19961217102630'}
+        self._schema.build_spatial_index(**kwargs)
+        received = self._schema.get_table('image_spatial_index')
+        expected = {'row_id': '0000_tvu7whrjnc16_09222521218464775807',
+                    'cf': {
+                        'cq': {'file': 'i_3001a'}}}
+        msg = 'Image spatial index structure result error'
+        self.assertDictEqual(received, expected, msg)
+
+    def test_build_meta_spatial_index_current_time(self):
+        """Build the meta spatial index ingest data structure.
+        """
+        self._schema.source_id = 'i_3001a'
+
+        kwargs = {'index_table': 'image_spatial_index',
+                  'point': '32.9831944444,85.0001388889',
+                  'source_date': None}
+        self._schema.build_spatial_index(**kwargs)
+        received = self._schema.get_table('image_spatial_index')
+        received = received.get('row_id')
+        expected = '0000_tvu7whrjnc16_'
+        msg = 'Spatial index (current time) structure result error'
+        self.assertRegexpMatches(received, expected, msg)
 
     @classmethod
     def tearDown(cls):

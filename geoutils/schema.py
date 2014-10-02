@@ -8,6 +8,7 @@ __all__ = ["Schema"]
 
 import re
 
+import geoutils.index
 from geosutils.log import log
 
 
@@ -54,8 +55,16 @@ class Schema(object):
     def data(self, value):
         self._data = value
 
+    def get_table(self, table_name):
+        """Returns the tables schema defined by *table_name*
+        """
+        return self.data.get('tables').get(table_name)
+
     def build_meta(self, meta_table, meta, image_uri=None):
         """Build the Image Library metadata schema.
+
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
 
         **Args:**
             *meta_table*: name of the Accumulo metadata table
@@ -102,8 +111,17 @@ class Schema(object):
         if image_uri is not None:
             data['cq']['image'] = image_uri
 
+        # New work as part of GDT-239 to build the image with a
+        # reference to a HDFS URI.
         token_set = self.build_document_map(data['cq'])
         self.build_metasearch(token_set)
+
+        # New work as part of GDT-392 to build the spatial index.
+        point = data.get('cq').get('center')
+        image_date = data.get('cq').get('metadata=NITF_IDATIM')
+        self.build_spatial_index('image_spatial_index',
+                                  point,
+                                  image_date)
 
         log.info('Ingest metadata structure build done')
 
@@ -116,6 +134,9 @@ class Schema(object):
         associated with the image library's schema image/thumb component.
 
         Requires an active :attr:`dataset`.
+
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
 
         **Kwargs:**
             *downsample*: an integer value that represents the
@@ -160,6 +181,9 @@ class Schema(object):
         Typically, these are the keys within the schema that start with
         ``metadata=*``.  However, token can be overriden with *token*.
 
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
+
         **Args:**
             *source*: dictionary of schema metadata components
 
@@ -201,6 +225,9 @@ class Schema(object):
         """Creates a Document Partitioned Indexed structure for
         the metadata component defined by the *token_set* document map.
 
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
+
         **Args:**
             *token_set*: a Python ``set`` of words
 
@@ -211,13 +238,18 @@ class Schema(object):
                 {'cq': {<token_01>: <row_id>,
                         <token_02>: <row_id>,
                         ...,},
-                 'val': {'e': <row_id>}}
+                 'val': {'e': <shard_id>}}
 
         """
         log.info('Building ingest metasearch component ...')
 
         self.data['tables']['meta_search'] = {}
+
+        # Override the row_id.
+        self.data['tables']['meta_search']['row_id'] = self.shard_id
+
         data = self.data['tables']['meta_search']['cf'] = {}
+
         data['val'] = {'e': self.shard_id}
 
         data['cq'] = {}
@@ -225,3 +257,57 @@ class Schema(object):
             data['cq'][token] = self.source_id
 
         log.info('Ingest metasearch structure build done')
+
+    def build_spatial_index(self, index_table, point, source_date=None):
+        """Build the spatial index schema for an Accumulo ingest.
+
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
+
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
+
+        **Args:**
+            *index_table*: the name of the spatial index table
+
+            *point*: comma separated string representation of a
+            latitude and longitude in the form ``'<latitude>,<longitude>'``.
+            For example::
+
+                ``'32.9831944444,85.0001388889'``
+
+            *source_date*: the date to use for indexing purposes.
+            Refer to the
+            :meth:`geoutils.index.Spatial.get_reverse_timestamp`
+            for a definition of the supported time formats.
+
+        """
+        log.info('Building ingest meta spatial index component ...')
+
+        # Initialise the table construct if missing.
+        if self.data['tables'].get(index_table) is None:
+            self.data['tables'][index_table] = {}
+
+        data = self.data['tables'][index_table]
+
+        index = geoutils.index.Spatial()
+
+        stripe_token = index.get_stripe_token(self.source_id)
+
+        if point is None:
+            log.error('Lat/long point not defined: spatial index skipped')
+        else:
+            (latitude, longitude) = point.split(',')
+            geohash = index.gen_geohash(float(latitude), float(longitude))
+
+            timestamp = index.get_reverse_timestamp(source_date)
+
+            # Override the row_id.
+            row_id = '%s_%s_%s' % (stripe_token, geohash, timestamp)
+
+            # Build the schema component.
+            data['row_id'] = row_id
+            data['cf'] = {}
+            data['cf']['cq'] = {'file': self.source_id}
+
+        log.info('Ingest meta spatial index structure build done')

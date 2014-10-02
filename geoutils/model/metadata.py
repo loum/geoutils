@@ -103,7 +103,7 @@ class Metadata(geoutils.ModelBase):
             *jsonify*: return as a JSON string
 
         **Returns:**
-            a list of 4 sets of (lists) of decimcal lat/long values that
+            a list of 4 sets of (lists) of float lat/long values that
             represent the boundary coordinates of the image.  List
             construct is similar to the following::
 

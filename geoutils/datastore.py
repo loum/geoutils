@@ -166,7 +166,7 @@ class Datastore(object):
         """Initialise the datastore table.
 
         **Kwargs:**
-            *name*: override the name of the image table to delete
+            *name*: name of the table to create
 
         """
         status = False
@@ -278,10 +278,12 @@ class Datastore(object):
                 if writer is None:
                     break
 
-                if table == self.meta_search.name:
-                    ingest_row_id = shard_id
-                else:
-                    ingest_row_id = row_id
+                # Check if we can override the row_id.
+                ingest_row_id = row_id
+                if value.get('row_id') is not None:
+                    ingest_row_id = value.get('row_id')
+                    log.info('Overriding row_id with "%s"' %
+                             ingest_row_id)
 
                 log.info('Creating mutation for Row ID: "%s"' %
                          ingest_row_id)

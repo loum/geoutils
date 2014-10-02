@@ -24,6 +24,7 @@ class TestDatastore(unittest2.TestCase):
         cls._mock.start()
 
         cls._meta_table_name = 'meta_library'
+        cls._image_spatial_index_table_name = 'image_spatial_index'
         cls._metasearch_table_name = 'meta_search'
         cls._image_table_name = 'image_library'
         cls._thumb_table_name = 'thumb_library'
@@ -154,6 +155,21 @@ class TestDatastore(unittest2.TestCase):
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
 
+    def test_ingest_spatial_index(self):
+        """Ingest the metadata component: spatial index.
+        """
+        from geoutils.tests.files.ingest_data_01 import DATA
+
+        self._ds.connect()
+        self._ds.init_table(self._image_spatial_index_table_name)
+
+        received = self._ds.ingest(DATA)
+        msg = 'Ingest status with datastore connection not True'
+        self.assertTrue(received, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._image_spatial_index_table_name)
+
     def test_ingest_with_metasearch(self):
         """Ingest the metadata component: with metasearch.
         """
@@ -276,6 +292,38 @@ class TestDatastore(unittest2.TestCase):
 
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
+        self._ds.delete_table(self._metasearch_table_name)
+        self._ds.delete_table(self._image_table_name)
+        self._ds.delete_table(self._thumb_table_name)
+
+    def test_ingest_from_file_spatial_index(self):
+        """Attempt to ingest from NITF file.
+        """
+        ntf_file = os.path.join('geoutils',
+                                'tests',
+                                'files',
+                                'i_3001a.ntf')
+
+        self._ds.connect()
+        self._ds.init_table(self._meta_table_name)
+        self._ds.init_table(self._image_spatial_index_table_name)
+        self._ds.init_table(self._metasearch_table_name)
+        self._ds.init_table(self._image_table_name)
+        self._ds.init_table(self._thumb_table_name)
+
+        standard = geoutils.Standard(source_filename=ntf_file)
+        standard.open()
+        self._ds.ingest(standard(dry=True))
+
+        # If you want to ingest some sample data into the proxy server
+        # and block (so that you can connect via the client) then
+        # uncomment the following two lines.
+        # import time
+        # time.sleep(1000)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+        self._ds.delete_table(self._image_spatial_index_table_name)
         self._ds.delete_table(self._metasearch_table_name)
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)

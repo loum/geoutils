@@ -28,7 +28,7 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.model.tests:TestModelMetadata \
 	geoutils.model.tests:TestModelImage \
 	geoutils.model.tests:TestModelThumb \
-	geoutils.model.tests:TestModelSpatial \
+	geoutils.index.tests:TestSpatial \
 	geoutils.config.tests:TestConfig \
 	geoutils.config.tests:TestInitConfig \
 	geoutils.config.tests:TestIngestConfig \

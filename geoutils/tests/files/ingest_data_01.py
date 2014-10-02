@@ -4,8 +4,15 @@
 """
 DATA = {
     'row_id': 'i_3001a',
-    'shard_id': 's01',
     'tables': {
+        'image_spatial_index': {
+            'row_id': '0000_tvu7whrjnc16_09222521218464775807',
+            'cf': {
+                'cq': {
+                    'file': 'i_3001a',
+                },
+            },
+        },
         'meta_library': {
             'cf': {
                 'cq': {

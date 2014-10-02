@@ -4,9 +4,9 @@
 """
 DATA = {
     'row_id': 'i_3001a',
-    'shard_id': 's01',
     'tables': {
         'meta_search': {
+            'row_id': 's01',
             'cf': {
                 'cq': {
                     '00000': 'i_3001a',
