@@ -376,6 +376,7 @@ class TestDatastore(unittest2.TestCase):
         cls._mock.stop()
 
         del cls._meta_table_name
+        del cls._image_spatial_index_table_name
         del cls._metasearch_table_name
         del cls._image_table_name
         del cls._thumb_table_name

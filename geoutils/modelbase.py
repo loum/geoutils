@@ -113,3 +113,40 @@ class ModelBase(object):
             results.append(record.cq)
 
         return results
+
+    def regex_query(self, table, regexs):
+        """A simple implementation of an Accumulo regular expression
+        filter iterator.
+
+        .. note::
+
+            Although *regexs* accepts a list of values that can chained
+            together, only the first index is used at this time.
+
+        **Kwargs:**
+            *table*: the name of the table to search.
+
+            .. note::
+                this is currently hardwired to the spatial index table
+                ``image_spatial_index``
+
+            *regex*: list of Java based regular expression constructs.
+            In the context of the image spatial index search::
+
+                ['.*tvu7whrjnc16.*']
+
+        """
+        log.info('Querying table "%s" against regexs: "%s" ...' %
+                 (table, regexs))
+
+        if isinstance(regexs, basestring):
+            regexs = [regexs]
+
+        iterators = [pyaccumulo.iterators.RegExFilter(row_regex=regexs[0])]
+
+        results = []
+        for record in self.connection.batch_scan(table=table,
+                                                 iterators=iterators):
+            results.append(record.cq)
+
+        return results

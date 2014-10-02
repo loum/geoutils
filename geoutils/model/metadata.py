@@ -7,6 +7,7 @@ __all__ = ["Metadata"]
 
 import json
 import re
+import geohash
 
 import geoutils
 from geosutils.log import log
@@ -17,6 +18,7 @@ class Metadata(geoutils.ModelBase):
 
     """
     _name = 'meta_library'
+    _spatial_index_name = 'image_spatial_index'
     _coord_cols = [['coord=0'], ['coord=1'], ['coord=2'], ['coord=3']]
 
     def __init__(self, connection, name=None):
@@ -37,6 +39,14 @@ class Metadata(geoutils.ModelBase):
         del self._coord_cols[:]
         self._coord_cols = []
         self._coord_cols = value
+
+    @property
+    def spatial_index_name(self):
+        return self._spatial_index_name
+
+    @spatial_index_name.setter
+    def spatial_index_name(self, value):
+        self._spatial_index_name = value
 
     def query_metadata(self, key=None, jsonify=False):
         """Query the metadata component from the datastore.
@@ -137,3 +147,40 @@ class Metadata(geoutils.ModelBase):
         log.info('Image boundary coordinates scan complete')
 
         return coords
+
+    def query_points(self, point, precision=5):
+        """Scan the metadata spatial index table that match a given
+        *point*.
+
+        A precision of 5 equates to a geohash grid size of around 10KM.
+
+        **Args:**
+            *point*: iterable object (list or tuple) representing
+            the latitude and longitude of the point of interest
+
+            *precision*: geohash grid size.  The precision in the
+            Accumulo spatial index is 12 (less than 1 meter grid)
+            so the value needs to be 12 or less.  Defaults to 5
+
+        **Returns:**
+            Dictionary structure representing all matching points
+            contained with the search grid.  For of dictionary
+            structure is::
+
+                {'center_point_match': ['i_3001a', ...]}
+
+        """
+        # Generate the geohash.
+        (latitude, longitude) = point
+
+        hashcode = geohash.encode(latitude, longitude, precision)
+        log.debug('Point "%s" geohash is: "%s"' % (point, hashcode))
+
+        results = self.regex_query(self.spatial_index_name,
+                                   '.*_%s.*' % hashcode)
+
+        files = {'center_point_match': []}
+        for cell in results:
+            files['center_point_match'].append(cell)
+
+        return files

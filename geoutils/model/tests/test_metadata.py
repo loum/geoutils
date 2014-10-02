@@ -26,6 +26,7 @@ class TestModelMetadata(unittest2.TestCase):
         cls._mock.start()
 
         cls._meta_table_name = 'meta_library'
+        cls._image_spatial_index_table_name = 'image_spatial_index'
 
     @classmethod
     def setUp(cls):
@@ -158,6 +159,30 @@ class TestModelMetadata(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
+    def test_query_points(self):
+        """Scan the metadata spatial index table.
+        """
+        self._ds.init_table(self._image_spatial_index_table_name)
+
+        from geoutils.tests.files.ingest_data_01 import DATA
+        self._ds.ingest(DATA)
+
+        point = (32.9831944444, 85.0001388889)
+        received = self._meta.query_points(point)
+        expected = {'center_point_match': ['i_3001a']}
+        msg = 'Image points scan should return results'
+        self.assertDictEqual(received, expected, msg)
+
+        # Shift the grid up around 110KM.
+        point = (34.0, 85.0001388889)
+        received = self._meta.query_points(point)
+        expected = {'center_point_match': []}
+        msg = 'Image points scan should not return results'
+        self.assertDictEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)
@@ -165,6 +190,7 @@ class TestModelMetadata(unittest2.TestCase):
         cls._mock.stop()
 
         del cls._meta_table_name
+        del cls._image_spatial_index_table_name
 
     @classmethod
     def tearDown(cls):

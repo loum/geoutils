@@ -24,6 +24,7 @@ class TestModelBase(unittest2.TestCase):
         cls._mock.start()
 
         cls._image_table_name = 'image_library'
+        cls._image_spatial_index_table_name = 'image_spatial_index'
 
     @classmethod
     def setUp(cls):
@@ -49,6 +50,61 @@ class TestModelBase(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._image_table_name)
 
+    def test_regex_query(self):
+        """RegEx query.
+        """
+        self._ds.init_table(self._image_spatial_index_table_name)
+
+        # Load sample data.  One record for now but we
+        # probably want to expand this to provide more data.
+        from geoutils.tests.files.ingest_data_01 import DATA
+        self._ds.ingest(DATA)
+
+        # Direct geohash match.
+        regexs = ['.*tvu7whrjnc16.*']
+        received = self._base.regex_query(self._image_spatial_index_table_name,
+                                          regexs=regexs)
+        expected = ['i_3001a']
+        msg = 'RegEx query returned error'
+        self.assertListEqual(received, expected, msg)
+
+        # Reduced geohash precision search.
+        regexs = ['.*tvu7whrjnc1.*']
+        received = self._base.regex_query(self._image_spatial_index_table_name,
+                                          regexs=regexs)
+        expected = ['i_3001a']
+        msg = 'RegEx query (reduced resolution) error'
+        self.assertListEqual(received, expected, msg)
+
+        # Missing geohash search.
+        regexs = ['.*banana.*']
+        received = self._base.regex_query(self._image_spatial_index_table_name,
+                                          regexs=regexs)
+        expected = []
+        msg = 'RegEx query (missing geohash) error'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._image_spatial_index_table_name)
+
+    def test_regex_query_string_based_regex(self):
+        """RegEx query: string based regex.
+        """
+        self._ds.init_table(self._image_spatial_index_table_name)
+
+        # Load sample data.  One record for now but we
+        # probably want to expand this to provide more data.
+        from geoutils.tests.files.ingest_data_01 import DATA
+        self._ds.ingest(DATA)
+
+        # Direct geohash match.
+        regex = '.*tvu7whrjnc16.*'
+        received = self._base.regex_query(self._image_spatial_index_table_name,
+                                          regexs=regex)
+        expected = ['i_3001a']
+        msg = 'RegEx query (string based) returned error'
+        self.assertListEqual(received, expected, msg)
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)
@@ -57,6 +113,7 @@ class TestModelBase(unittest2.TestCase):
         del cls._mock
 
         del cls._image_table_name
+        del cls._image_spatial_index_table_name
 
     @classmethod
     def tearDown(cls):
