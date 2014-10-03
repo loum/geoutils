@@ -126,10 +126,6 @@ class ModelBase(object):
         **Kwargs:**
             *table*: the name of the table to search.
 
-            .. note::
-                this is currently hardwired to the spatial index table
-                ``image_spatial_index``
-
             *regex*: list of Java based regular expression constructs.
             In the context of the image spatial index search::
 

@@ -8,6 +8,7 @@ __all__ = ["Metadata"]
 import json
 import re
 import geohash
+import shapely
 
 import geoutils
 from geosutils.log import log
@@ -184,3 +185,32 @@ class Metadata(geoutils.ModelBase):
             files['center_point_match'].append(cell)
 
         return files
+
+    def query_bbox_points(self, bbox, precision=4):
+        """Scan the metadata spatial index table that match a given
+        *bbox* boundary box range.
+
+        A precision of 4 equates to a geohash grid size of around 500KM.
+
+        **Args:**
+            *bbox*: iterable object (list or tuple) representing
+            the left (longitude), bottom (latitude), right (longitude)
+            and top (latitude) of the bounding box.
+
+            *precision*: geohash grid size.  The precision in the
+            Accumulo spatial index is 12 (less than 1 meter grid)
+            so the value needs to be 12 or less.  Defaults to 5
+
+        **Returns:**
+            Dictionary structure representing all matching points
+            contained with the search grid.  For of dictionary
+            structure is::
+
+                {'center_point_match': ['i_3001a', ...]}
+
+        """
+        box = shapely.geometry.box(*bbox)
+        centroid_point = (box.centroid.x, box.centroid.y)
+        log.info('BBox centroid point (X, Y): %s' % str(centroid_point))
+
+        return self.query_points(centroid_point, precision)
