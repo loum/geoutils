@@ -62,7 +62,7 @@ FILES = find_data_files('doc/build/',
                         '*.js',
                         '*.css',
                         recursive=True,
-                        target_dir='doc/build')
+                        target_dir='doc/build/geoutils')
 
 setup(name='python-geoutils',
       version=VERSION,
@@ -70,6 +70,7 @@ setup(name='python-geoutils',
       author='Lou Markovski',
       author_email='lou.markovski@gmail.com',
       url='',
+      scripts=['geoutils/bin/geoingest'],
       install_requires=['python-geosutils==0.0.6',
                         'python-daemoniser==0.0.0',
                         'python-geolib-mock==0.0.0',
