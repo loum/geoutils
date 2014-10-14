@@ -5,7 +5,7 @@ import os
 import glob
 import fnmatch
 import shutil
-from setuptools import setup
+from setuptools import setup, find_packages
 
 VERSION = '0.0.0'
 
@@ -56,13 +56,7 @@ def find_data_files(srcdir, *wildcards, **kw):
 
     return file_list
 
-FILES = find_data_files('doc/build/',
-                        '*.html',
-                        '*.png',
-                        '*.js',
-                        '*.css',
-                        recursive=True,
-                        target_dir='doc/build/geoutils')
+find_data_files('geoutils/conf/', '*.conf', version=VERSION)
 
 setup(name='python-geoutils',
       version=VERSION,
@@ -88,5 +82,4 @@ setup(name='python-geoutils',
                 'geoutils.config',
                 'geoutils.index',
                 'geoutils.daemon'],
-      package_dir={'geoutils': 'geoutils'},
-      data_files=FILES)
+      package_data={'geoutils': ['conf/*.conf.[0-9]*.[0-9]*.[0-9]*']})

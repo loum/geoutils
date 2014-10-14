@@ -1,1 +1,2 @@
 recursive-include doc/build/ *.html *.png *.js *.css
+include geoutils/conf/*.conf
