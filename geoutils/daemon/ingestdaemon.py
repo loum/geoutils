@@ -24,13 +24,16 @@ class IngestDaemon(daemoniser.Daemon):
     dry = False
     batch = False
     conf = None
+    delete = False
+    accumulo = None
 
     def __init__(self,
                  pidfile,
                  filename=None,
                  dry=False,
                  batch=False,
-                 conf=None):
+                 conf=None,
+                 delete=False):
         """:class:`IngestDaemon` initialisation.
 
         """
@@ -40,6 +43,7 @@ class IngestDaemon(daemoniser.Daemon):
         self.dry = dry
         self.batch = batch
         self.conf = conf
+        self.delete = delete
 
         # If a file is provided on the command line, we want to
         # force a single iteration.
@@ -60,7 +64,10 @@ class IngestDaemon(daemoniser.Daemon):
         file_to_process = None
         if self.filename is not None:
             file_to_process = self.filename
-            self.process(event, file_to_process)
+            if os.path.exists(file_to_process):
+                self.process(event, file_to_process)
+            else:
+                log.warn('Source "%s" does not exist' % file_to_process)
         else:
             child_pids = []
             for thread_count in range(self.conf.threads):
@@ -96,7 +103,14 @@ class IngestDaemon(daemoniser.Daemon):
                 file_to_process = self.source_file()
 
             if file_to_process is not None:
-                self.ingest(file_to_process, dry=self.dry)
+                if (self.ingest(file_to_process, dry=self.dry) and
+                    self.delete and not self.dry):
+                    log.info('Deleting file: %s' %
+                             file_to_process + '.proc')
+                    try:
+                        os.remove(file_to_process + '.proc')
+                    except OSError as error:
+                        log.error(error)
 
             if self.dry:
                 print('Dry run iteration complete')
@@ -132,19 +146,30 @@ class IngestDaemon(daemoniser.Daemon):
         **Kwargs:**
             *dry*: if ``True`` only simulate, do not execute
 
+        **Returns:**
+            Boolean ``True`` on successful record creation.  Boolean
+            ``False`` otherwise
+
         """
         # First, move the file into a "processing" state.
         move_file(filename, filename + '.proc')
 
         nitf = geoutils.NITF(source_filename=filename + '.proc')
         nitf.meta_shards = self.conf.shards
-        nitf.image_model.hdfs_namenode = self.conf.namenode_user
+        nitf.image_model.hdfs_namenode = self.conf.namenode_host
         nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
         nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
         nitf.open()
         hdfs_target_path = self.conf.namenode_target_path
-        self.accumulo.ingest(nitf(target_path=hdfs_target_path, dry=dry),
-                             dry=dry)
+        status = self.accumulo.ingest(nitf(target_path=hdfs_target_path,
+                                           dry=dry),
+                                      dry=dry)
+
+        # In dry mode we need to restore the file.
+        if dry:
+            move_file(filename + '.proc', filename)
+
+        return status
 
     def source_file(self):
         """Checks inbound directory (defined by the

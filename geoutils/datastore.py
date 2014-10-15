@@ -144,7 +144,7 @@ class Datastore(object):
         the connection state (a :class:`pyaccumulo.Accumulo` object)
 
         """
-        log.info('Attempting connection to Accumulo proxy ...')
+        log.debug('Attempting connection to Accumulo proxy ...')
         log.debug('Connection args: "%s:%s@%s:%s"' %
                   (self.user, '********', self.host, self.port))
         try:

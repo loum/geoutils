@@ -59,7 +59,7 @@ class Config(ConfigParser.SafeConfigParser):
             Boolean ``True`` upon success.  Boolean ``False`` otherwise.
 
         """
-        log.info('Parsing config file: "%s"' % self.config_file)
+        log.debug('Parsing config file: "%s"' % self.config_file)
         config_parse_status = False
 
         if (self.config_file is None or

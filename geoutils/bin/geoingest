@@ -10,12 +10,21 @@ import sys
 import daemoniser
 import geoutils
 
+CONF = os.path.join(os.sep, 'etc', 'geoutils', 'conf', 'geoutils.conf')
+
 
 def main():
+    """Script entry point.
+
+    """
     service = daemoniser.Service()
     service.parser.add_option('-f', '--file',
                               dest='file',
                               help='file to process inline (start only)')
+    service.parser.add_option('-r', '--remove',
+                              dest='remove',
+                              action='store_true',
+                              help='delete file after processing')
     script_name = os.path.basename(inspect.getfile(inspect.currentframe()))
     service.check_args(script_name)
 
@@ -24,19 +33,28 @@ def main():
     if service.options.file:
         command_line_file = service.options.file
 
-    conf = None
-    if service.options.config is None:
-        sys.exit('Unable to source the geoutils.conf')
+    remove_file = False
+    if service.options.remove:
+        remove_file = service.options.remove
 
-    conf = geoutils.IngestConfig(service.options.config)
-    conf.parse_config()
+    config_file = service.options.config
+    if config_file is None:
+        if os.path.exists(CONF):
+            config_file = CONF
+
+    if config_file is None:
+        sys.exit('Unable to source the geoutils.conf')
+    else:
+        conf = geoutils.IngestConfig(config_file)
+        conf.parse_config()
 
     # OK, start processing.
     ingestd = geoutils.IngestDaemon(pidfile=service.pidfile,
                                     filename=command_line_file,
                                     dry=service.dry,
                                     batch=service.batch,
-                                    conf=conf)
+                                    conf=conf,
+                                    delete=remove_file)
 
     service.launch_command(ingestd, script_name)
 

@@ -56,12 +56,38 @@ class TestIngestDaemon(unittest2.TestCase):
                                    'i_3001a.ntf')
         target_file = os.path.join(self._ingestd.conf.inbound_dir,
                                    os.path.basename(source_file))
-        
         copy_file(source_file, target_file)
-        msg = 'Source NITF file should return file path'
+
         received = self._ingestd.source_file()
         expected = target_file
+        msg = 'Source NITF file should return file path'
         self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        remove_files(target_file)
+
+    def test_initialise_with_nitf_file(self):
+        """Initialise a IngestDaemon with a file.
+        """
+        source_file = os.path.join('geoutils',
+                                   'tests',
+                                   'files',
+                                   'i_3001a.ntf')
+        target_file = os.path.join(self._ingestd.conf.inbound_dir,
+                                   os.path.basename(source_file))
+        copy_file(source_file, target_file)
+
+        ingestd = geoutils.IngestDaemon(pidfile=None,
+                                        filename=source_file,
+                                        conf=self._conf)
+        received = ingestd.source_file()
+        expected = target_file
+        msg = 'Initialised IngestDaemon should return file path'
+        self.assertEqual(received, expected, msg)
+
+        # ... and the batch should be set.
+        msg = 'Initialised IngestDaemon batch should be True'
+        self.assertTrue(ingestd.batch, msg)
 
         # Clean up.
         remove_files(target_file)

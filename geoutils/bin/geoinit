@@ -9,6 +9,8 @@ import sys
 import daemoniser
 import geoutils
 
+CONF = os.path.join(os.sep, 'etc', 'geoutils', 'conf', 'geoutils.conf')
+
 
 class GeoinitDaemon(daemoniser.Daemon):
     """:class:`GeoinitDaemon`
@@ -22,7 +24,7 @@ class GeoinitDaemon(daemoniser.Daemon):
                  pidfile,
                  force=False,
                  dry=False,
-                 config=None):
+                 conf=None):
         """:class:`GeoinitDaemon` initialisation.
 
         """
@@ -30,11 +32,7 @@ class GeoinitDaemon(daemoniser.Daemon):
 
         self.force = force
         self.dry = dry
-        self.conf = config
-        if self.conf is None:
-            sys.exit('geoutils.conf file not defined')
-        else:
-            self.conf.parse_config()
+        self.conf = conf
 
     def _start(self, event):
         """Override the :meth:daemoniser.Daemon._start` method.
@@ -42,16 +40,20 @@ class GeoinitDaemon(daemoniser.Daemon):
         """
         self.accumulo = self.accumulo_connect()
 
-        self.init(force=self.force)
+        if self.accumulo.connection is not None:
+            self.init(force=self.force)
 
         if self.dry:
-            print('Dry run iteration complete -- aborting')
+            print('Dry run table creation complete.')
         else:
-            print('Batch run iteration complete -- aborting')
+            print('Table creation complete.')
 
     def accumulo_connect(self):
         """Create a connection to the Accumulo datastore defined
         within the environment's setting.py file.
+
+        **Returns:**
+            Returns an :class:`geoutils.Datastore` object
 
         """
         datastore = geoutils.Datastore()
@@ -76,7 +78,10 @@ class GeoinitDaemon(daemoniser.Daemon):
                 data from the Accumulo tables
 
         """
-        for table in ['meta_library', 'thumb_library']:
+        for table in ['meta_library',
+                      'thumb_library',
+                      'meta_search',
+                      'image_spatial_index']:
             print('Processing table: "%s"' % table)
             table_exists = False
             if self.accumulo.exists_table(table):
@@ -95,23 +100,36 @@ class GeoinitDaemon(daemoniser.Daemon):
 
 
 def main():
+    """Script entry point.
+
+    """
     service = daemoniser.Service()
+    # Don't need batching support.
+    service.parser.remove_option('-b')
     service.parser.add_option('-f', '--force',
                               dest='force',
                               action='store_true',
                               help='force existing table deletion')
     script_name = os.path.basename(inspect.getfile(inspect.currentframe()))
-    service.check_args(script_name)
+    service.parser.set_usage('usage: %prog [options]')
+    service.check_args(script_name, command='start')
 
-    config = None
-    if service.options.config is not None:
-        config = geoutils.InitConfig(service.options.config)
+    config_file = service.options.config
+    if config_file is None:
+        if os.path.exists(CONF):
+            config_file = CONF
+
+    if config_file is None:
+        sys.exit('Unable to source the geoutils.conf')
+    else:
+        conf = geoutils.InitConfig(config_file)
+        conf.parse_config()
 
     # OK, start processing.
     ingestd = GeoinitDaemon(pidfile=service.pidfile,
                             force=(service.options.force is not None),
                             dry=service.dry,
-                            config=config)
+                            conf=conf)
 
     service.launch_command(ingestd, script_name, inline=True)
 
