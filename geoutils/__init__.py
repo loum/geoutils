@@ -10,4 +10,6 @@ from geoutils.schema import Schema
 from geoutils.config import Config
 from geoutils.config.initconfig import InitConfig
 from geoutils.config.ingestconfig import IngestConfig
+from geoutils.config.stagerconfig import StagerConfig
 from geoutils.daemon.ingestdaemon import IngestDaemon
+from geoutils.daemon.stagerdaemon import StagerDaemon

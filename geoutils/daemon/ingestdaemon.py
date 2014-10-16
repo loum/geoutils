@@ -1,5 +1,6 @@
 # pylint: disable=R0903,C0111,R0902
-"""The :class:`geoutils.Datastore` abstracts an Accumulo interface.
+"""The :class:`geoutils.IngestDaemon` supports the daemonisation
+facility for the geoingest
 
 """
 __all__ = ["IngestDaemon"]

@@ -32,7 +32,9 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.config.tests:TestConfig \
 	geoutils.config.tests:TestInitConfig \
 	geoutils.config.tests:TestIngestConfig \
-	geoutils.daemon.tests:TestIngestDaemon
+	geoutils.config.tests:TestStagerConfig \
+	geoutils.daemon.tests:TestIngestDaemon \
+	geoutils.daemon.tests:TestStagerDaemon
 
 sdist:
 	$(PY) setup.py sdist
