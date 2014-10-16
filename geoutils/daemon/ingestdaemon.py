@@ -57,11 +57,6 @@ class IngestDaemon(daemoniser.Daemon):
         """
         signal.signal(signal.SIGTERM, self._exit_handler)
 
-        self.accumulo = self.accumulo_connect()
-        if self.accumulo.connection is None:
-            log.fatal('Datastore connection not detected: aborting')
-            sys.exit(1)
-
         file_to_process = None
         if self.filename is not None:
             file_to_process = self.filename
@@ -99,6 +94,11 @@ class IngestDaemon(daemoniser.Daemon):
             a file system search)
 
         """
+        self.accumulo = self.accumulo_connect()
+        if self.accumulo.connection is None:
+            log.fatal('Datastore connection not detected: aborting')
+            sys.exit(1)
+
         while not event.isSet():
             if file_to_process is None:
                 file_to_process = self.source_file()
