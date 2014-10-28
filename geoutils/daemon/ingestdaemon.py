@@ -100,10 +100,14 @@ class IngestDaemon(daemoniser.Daemon):
             sys.exit(1)
 
         while not event.isSet():
+            skip_sleep = False
             if file_to_process is None:
                 file_to_process = self.source_file()
 
             if file_to_process is not None:
+                # Don't sleep if there are files to process.
+                skip_sleep = True
+
                 if (self.ingest(file_to_process, dry=self.dry) and
                     self.delete and not self.dry):
                     log.info('Deleting file: %s' %
@@ -121,7 +125,8 @@ class IngestDaemon(daemoniser.Daemon):
                 event.set()
             else:
                 file_to_process = None
-                time.sleep(self.conf.thread_sleep)
+                if not skip_sleep:
+                    time.sleep(self.conf.thread_sleep)
 
     def accumulo_connect(self):
         """Create a connection to the Accumulo datastore defined
@@ -152,23 +157,25 @@ class IngestDaemon(daemoniser.Daemon):
             ``False`` otherwise
 
         """
+        status = False
+
         # First, move the file into a "processing" state.
-        move_file(filename, filename + '.proc')
+        proc_file = filename + '.proc'
+        if move_file(filename, proc_file):
+            nitf = geoutils.NITF(source_filename=filename + '.proc')
+            nitf.meta_shards = self.conf.shards
+            nitf.image_model.hdfs_namenode = self.conf.namenode_host
+            nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
+            nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
+            nitf.open()
+            hdfs_target_path = self.conf.namenode_target_path
+            status = self.accumulo.ingest(nitf(target_path=hdfs_target_path,
+                                               dry=dry),
+                                          dry=dry)
 
-        nitf = geoutils.NITF(source_filename=filename + '.proc')
-        nitf.meta_shards = self.conf.shards
-        nitf.image_model.hdfs_namenode = self.conf.namenode_host
-        nitf.image_model.hdfs_namenode_port = self.conf.namenode_port
-        nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
-        nitf.open()
-        hdfs_target_path = self.conf.namenode_target_path
-        status = self.accumulo.ingest(nitf(target_path=hdfs_target_path,
-                                           dry=dry),
-                                      dry=dry)
-
-        # In dry mode we need to restore the file.
-        if dry:
-            move_file(filename + '.proc', filename)
+            # In dry mode we need to restore the file.
+            if dry:
+                move_file(proc_file, filename)
 
         return status
 

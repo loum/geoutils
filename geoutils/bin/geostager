@@ -52,7 +52,7 @@ def main():
     if config_file is None:
         sys.exit('Unable to source the geoutils.conf')
     else:
-        conf = geoutils.IngestConfig(config_file)
+        conf = geoutils.StagerConfig(config_file)
         conf.parse_config()
 
     # OK, start processing.
@@ -60,8 +60,8 @@ def main():
                                     dry=service.dry,
                                     conf=conf,
                                     fixture_dir=fixture_dir,
-                                    regen_count=gen_number,
-                                    regen_sleep=gen_sleep)
+                                    regen_count=int(gen_number),
+                                    regen_sleep=float(gen_sleep))
 
     service.launch_command(ingestd, script_name)
 

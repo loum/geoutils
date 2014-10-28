@@ -84,13 +84,13 @@ class StagerDaemon(daemoniser.Daemon):
             regen_file_rand = ('%s_%s%s' % (filename,
                                             self.random_string(),
                                             extension))
-            log.info('Regen file %d:%s' % ((regen_count + 1),
-                                           regen_file_rand))
+
+            target_file =  os.path.join(self.conf.inbound_dir,
+                                        os.path.basename(regen_file_rand))
+            log.info('Regen file %d:%s' % ((regen_count + 1), target_file))
 
             if not self.dry:
-                copy_file(regen_file,
-                          os.path.join(self.conf.inbound_dir,
-                                       os.path.basename(regen_file_rand)))
+                copy_file(regen_file, target_file)
 
             if event.isSet():
                 break

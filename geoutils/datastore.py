@@ -274,6 +274,10 @@ class Datastore(object):
                     log.info('Ingest skipped')
                     continue
 
+                if value.get('cf') is None:
+                    log.warn('Column family undefined: writer skipped')
+                    continue
+
                 writer = self._create_writer(table)
                 if writer is None:
                     break
@@ -300,9 +304,15 @@ class Datastore(object):
                     writer.add_mutation(mutation)
                 else:
                     log.info('Dry pass: mutation skipped')
-                writer.close()
 
-                ingest_status = True
+                # TODO: this exception is too general.  We need to
+                # make this more granular once we better understand
+                # the reason why the write close fails from time to time.
+                try:
+                    writer.close()
+                    ingest_status = True
+                except Exception as err:
+                    log.error('Writer close: %s' % err)
 
         log.info('Data ingestion complete')
 
