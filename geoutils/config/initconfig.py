@@ -7,10 +7,11 @@ __all__ = ["InitConfig"]
 
 
 import geoutils
+from geosutils.config import Config
 from geosutils.setter import set_scalar
 
 
-class InitConfig(geoutils.Config):
+class InitConfig(Config):
     """:class:`geoutils.InitConfig` class.
 
     """
@@ -23,7 +24,7 @@ class InitConfig(geoutils.Config):
         """:class:`geoutils.InitConfig` initialisation.
 
         """
-        geoutils.Config.__init__(self, config_file)
+        Config.__init__(self, config_file)
 
     @property
     def accumulo_host(self):
@@ -61,7 +62,7 @@ class InitConfig(geoutils.Config):
         """Read config items from the configuration file.
 
         """
-        geoutils.Config.parse_config(self)
+        Config.parse_config(self)
 
         kwargs = [{'section': 'accumulo_proxy_server',
                    'option': 'host',

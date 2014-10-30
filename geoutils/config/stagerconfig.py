@@ -7,10 +7,11 @@ __all__ = ["StagerConfig"]
 
 
 import geoutils
+from geosutils.config import Config
 from geosutils.setter import set_scalar
 
 
-class StagerConfig(geoutils.Config):
+class StagerConfig(Config):
     """:class:`geoutils.StagerConfig` class.
 
     """
@@ -20,7 +21,7 @@ class StagerConfig(geoutils.Config):
         """:class:`geoutils.StagerConfig` initialisation.
 
         """
-        geoutils.Config.__init__(self, config_file)
+        Config.__init__(self, config_file)
 
     @property
     def inbound_dir(self):
@@ -34,7 +35,7 @@ class StagerConfig(geoutils.Config):
         """Read config items from the configuration file.
 
         """
-        geoutils.Config.parse_config(self)
+        Config.parse_config(self)
 
         kwargs = [{'section': 'ingest',
                    'option': 'inbound_dir'}]
