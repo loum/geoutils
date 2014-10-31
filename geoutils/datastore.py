@@ -149,7 +149,7 @@ class Datastore(object):
                   (self.user, '********', self.host, self.port))
         try:
             self.connection = pyaccumulo.Accumulo(host=self.host,
-                                                  port=self.port,
+                                                  port=int(self.port),
                                                   user=self.user,
                                                   password=self.password)
             self.meta.connection = self.connection

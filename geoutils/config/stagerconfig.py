@@ -6,7 +6,6 @@ the GeoUtils ingest staging facility.
 __all__ = ["StagerConfig"]
 
 
-import geoutils
 from geosutils.config import Config
 from geosutils.setter import set_scalar
 

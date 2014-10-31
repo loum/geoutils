@@ -6,7 +6,6 @@ the GeoUtils ingest facility.
 __all__ = ["InitConfig"]
 
 
-import geoutils
 from geosutils.config import Config
 from geosutils.setter import set_scalar
 
