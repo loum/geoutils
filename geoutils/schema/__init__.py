@@ -13,7 +13,7 @@ from geosutils.log import log
 
 
 class Schema(object):
-    """:class:`geoutils.Standard`
+    """:class:`geoutils.Schema`
 
     """
     _source_id = None
