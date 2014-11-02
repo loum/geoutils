@@ -24,7 +24,7 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.tests:TestGeoImage \
 	geoutils.tests:TestDatastore \
 	geoutils.tests:TestModelBase \
-	geoutils.schema.tests:TestSchema \
+	geoutils.tests:TestSchema \
 	geoutils.model.tests:TestModelMetadata \
 	geoutils.model.tests:TestModelImage \
 	geoutils.model.tests:TestModelThumb \

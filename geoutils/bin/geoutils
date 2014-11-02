@@ -1,0 +1,67 @@
+#!/usr/bin/python
+"""Stub out the geoutils script.
+
+Initial iteration provides a simple ingest and query interface to
+an accumulo instance.
+
+"""
+import sys
+import argparse
+from pyaccumulo import Accumulo, Mutation, Range
+
+import geoutils
+from oct.utils.log import log
+
+try:
+    import settings
+except ImportError as err:
+    log.fatal('Please define your settings.py file')
+    sys.exit(1)
+
+def main():
+    """GeoUtils main call.
+
+    """
+    parser = argparse.ArgumentParser('GeoUtils command line interface')
+    parser.add_argument('action', help='ingest or query')
+    parser.add_argument('-f', '--file', help='file to ingest')
+    parser.add_argument('-k', '--key', help='key to search')
+    args = parser.parse_args()
+
+    datastore = geoutils.Datastore()
+    datastore.host = settings.HOST
+    datastore.port = settings.PORT
+    datastore.user = settings.USER
+    datastore.password = settings.PASSWORD
+    datastore.connect()
+
+    if args.action == 'ingest':
+        datastore.delete_table('meta_library')
+        datastore.delete_table('thumb_library')
+        datastore.init_table('meta_library')
+        datastore.init_table('thumb_library')
+
+        if args.file is not None:
+            nitf = geoutils.NITF(source_filename=args.file)
+            nitf.image_model.hdfs_namenode = settings.HDFS_NAMENODE
+            nitf.image_model.hdfs_namenode_port = settings.HDFS_NAMENODE_PORT
+            nitf.image_model.hdfs_namenode_user = settings.HDFS_NAMENODE_USER
+            nitf.open()
+            datastore.ingest(nitf(target_path=settings.HDFS_TARGET_PATH))
+    elif args.action == 'query':
+        datastore.query_metadata(table='meta_test', key=args.key)
+
+        # The following 2 items (image and thumb) have been commented
+        # out as the query will only return a stream of 1D image data
+        # in bytes.  However, if you are curious, just remove the
+        # comments.
+        #cells = datastore.query_image(table='image_test', key=args.key)
+        #for cell in cells:
+        #    print(cell)
+
+        #cells = datastore.query_image(table='thumb_test', key=args.key)
+        #for cell in cells:
+        #    print(cell)
+
+if __name__ == '__main__':
+    main()
