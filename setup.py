@@ -7,7 +7,7 @@ import fnmatch
 import shutil
 from setuptools import setup, find_packages
 
-VERSION = '0.0.0'
+VERSION = '0.0.1'
 
 
 def opj(*args):
@@ -67,8 +67,8 @@ setup(name='python-geoutils',
       scripts=['geoutils/bin/geoinit',
                'geoutils/bin/geoingest',
                'geoutils/bin/geostager'],
-      install_requires=['python-geosutils==0.0.6',
-                        'python-daemoniser==0.0.0',
+      install_requires=['python-geosutils==0.0.7',
+                        'python-daemoniser==0.0.1',
                         'python-geolib-mock==0.0.0',
                         'pyaccumulo==1.5.0.6.dev14',
                         'requests==1.1.0',
