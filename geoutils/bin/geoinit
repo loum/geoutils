@@ -81,7 +81,8 @@ class GeoinitDaemon(daemoniser.Daemon):
         for table in ['meta_library',
                       'thumb_library',
                       'meta_search',
-                      'image_spatial_index']:
+                      'image_spatial_index',
+                      'audit']:
             print('Processing table: "%s"' % table)
             table_exists = False
             if self.accumulo.exists_table(table):

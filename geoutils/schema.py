@@ -10,6 +10,7 @@ import re
 
 import geoutils.index
 from geosutils.log import log
+from geosutils.utils import get_reverse_timestamp
 
 
 class Schema(object):
@@ -278,7 +279,7 @@ class Schema(object):
 
             *source_date*: the date to use for indexing purposes.
             Refer to the
-            :meth:`geoutils.index.Spatial.get_reverse_timestamp`
+            :meth:`geosutils.utils.get_reverse_timestamp`
             for a definition of the supported time formats.
 
         """
@@ -300,7 +301,7 @@ class Schema(object):
             (latitude, longitude) = point.split(',')
             geohash = index.gen_geohash(float(latitude), float(longitude))
 
-            timestamp = index.get_reverse_timestamp(source_date)
+            timestamp = get_reverse_timestamp(source_date)
 
             # Override the row_id.
             row_id = '%s_%s_%s' % (stripe_token, geohash, timestamp)

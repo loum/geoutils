@@ -13,9 +13,11 @@ from multiprocessing import Process
 
 import geoutils
 import daemoniser
-from geosutils.files import get_directory_files
+from geosutils.files import (get_directory_files,
+                             move_file)
 from geosutils.log import log
-from geosutils.files import move_file
+from geosutils.utils import get_reverse_timestamp
+from geoutils.auditer import audit
 
 
 class IngestDaemon(daemoniser.Daemon):
@@ -71,6 +73,11 @@ class IngestDaemon(daemoniser.Daemon):
                           (thread_count + 1, self.conf.threads))
                 proc = Process(target=self.process, args=(event, ))
                 proc.start()
+
+                if self.dry:
+                    # Block until the thread completes.
+                    proc.join()
+
                 child_pids.append(proc.pid)
 
             if not self.dry and not self.batch:
@@ -162,6 +169,7 @@ class IngestDaemon(daemoniser.Daemon):
         # First, move the file into a "processing" state.
         proc_file = filename + '.proc'
         if move_file(filename, proc_file):
+            audit.data = {'ingest_daemon|start': str(time.time())}
             nitf = geoutils.NITF(source_filename=filename + '.proc')
             nitf.meta_shards = self.conf.shards
             nitf.image_model.hdfs_namenode = self.conf.namenode_host
@@ -169,9 +177,14 @@ class IngestDaemon(daemoniser.Daemon):
             nitf.image_model.hdfs_namenode_user = self.conf.namenode_user
             nitf.open()
             hdfs_target_path = self.conf.namenode_target_path
-            status = self.accumulo.ingest(nitf(target_path=hdfs_target_path,
-                                               dry=dry),
-                                          dry=dry)
+            data = nitf(target_path=hdfs_target_path, dry=dry)
+            status = self.accumulo.ingest(data, dry=dry)
+
+            if status:
+                audit.data = {'ingest_daemon|finish': str(time.time())}
+                audit.source_id = '%s_ingest_daemon' % get_reverse_timestamp()
+                self.accumulo.ingest(audit())
+                audit.reset()
 
             # In dry mode we need to restore the file.
             if dry:

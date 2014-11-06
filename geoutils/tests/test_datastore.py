@@ -29,12 +29,11 @@ class TestDatastore(unittest2.TestCase):
         cls._image_table_name = 'image_library'
         cls._thumb_table_name = 'thumb_library'
 
-    @classmethod
-    def setUp(cls):
-        cls._ds = geoutils.Datastore()
-        cls._ds.host = 'localhost'
-        cls._ds.port = 42425
-        cls._ds.user = 'root'
+    def setUp(self):
+        self._ds = geoutils.Datastore()
+        self._ds.host = 'localhost'
+        self._ds.port = 42425
+        self._ds.user = 'root'
 
     def test_init(self):
         """Initialise a :class:`geoutils.Datastore` object.
@@ -381,7 +380,6 @@ class TestDatastore(unittest2.TestCase):
         del cls._image_table_name
         del cls._thumb_table_name
 
-    @classmethod
-    def tearDown(cls):
-        cls._ds = None
-        del cls._ds
+    def tearDown(self):
+        self._ds = None
+        del self._ds

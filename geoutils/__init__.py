@@ -12,3 +12,4 @@ from geoutils.config.ingestconfig import IngestConfig
 from geoutils.config.stagerconfig import StagerConfig
 from geoutils.daemon.ingestdaemon import IngestDaemon
 from geoutils.daemon.stagerdaemon import StagerDaemon
+from geoutils.auditer import Auditer

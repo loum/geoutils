@@ -22,9 +22,8 @@ class TestSchema(unittest2.TestCase):
         nitf.open()
         cls._meta.extract_meta(dataset=nitf.dataset)
 
-    @classmethod
-    def setUp(cls):
-        cls._schema = geoutils.Schema()
+    def setUp(self):
+        self._schema = geoutils.Schema()
 
     def test_init(self):
         """Initialise a geoutils.Schema object.
@@ -201,10 +200,9 @@ class TestSchema(unittest2.TestCase):
         msg = 'Spatial index (current time) structure result error'
         self.assertRegexpMatches(received, expected, msg)
 
-    @classmethod
-    def tearDown(cls):
-        cls._schema = None
-        del cls._schema
+    def tearDown(self):
+        self._schema = None
+        del self._schema
 
     @classmethod
     def tearDownClass(cls):
