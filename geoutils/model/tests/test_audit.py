@@ -75,10 +75,7 @@ class TestModelAudit(unittest2.TestCase):
 
         # Get all audits back.  Order is important.
         received = self._audit.query_recent_audit()
-        expected = {'audits': ['09221956375225656441_dummy',
-                               '09221956437718808093_ingest_daemon',
-                               '09221956447616086912_ingest_daemon',
-                               '09221956447764569211_ingest_daemon']}
+        expected = {'audits': ['09221956375225656441_dummy']}
         msg = 'Scan across auditer table should return sorted records'
         self.assertDictEqual(received, expected, msg)
 
@@ -117,9 +114,7 @@ class TestModelAudit(unittest2.TestCase):
 
         # Control depth of records returned.  Again, order is important.
         received = self._audit.query_recent_audit(key='.*ingest_daemon')
-        expected = {'audits': ['09221956437718808093_ingest_daemon',
-                               '09221956447616086912_ingest_daemon',
-                               '09221956447764569211_ingest_daemon']}
+        expected = {'audits': ['09221956437718808093_ingest_daemon']}
         msg = 'Depth audit scan should return two records'
         self.assertDictEqual(received, expected, msg)
 

@@ -24,7 +24,7 @@ class Audit(geoutils.ModelBase):
         """
         super(Audit, self).__init__(connection, name)
 
-    def query_recent_audit(self, key=None, depth=10):
+    def query_recent_audit(self, key=None, depth=1):
         """Query the auditer component from the datastore.
 
         **Kwargs:**

@@ -59,6 +59,7 @@ class Datastore(object):
     _meta_search = geoutils.model.Metasearch(None)
     _image = geoutils.model.Image(None)
     _thumb = geoutils.model.Thumb(None)
+    _audit = geoutils.model.Audit(None)
 
     @property
     def connection(self):
@@ -116,6 +117,10 @@ class Datastore(object):
     def thumb(self):
         return self._thumb
 
+    @property
+    def audit(self):
+        return self._audit
+
     def __del__(self):
         self.close()
 
@@ -156,6 +161,7 @@ class Datastore(object):
             self.meta_search.connection = self.connection
             self.image.connection = self.connection
             self.thumb.connection = self.connection
+            self.audit.connection = self.connection
         except (TTransportException,
                 AccumuloSecurityException) as err:
             log.error('Connection error: "%s"' % err)
