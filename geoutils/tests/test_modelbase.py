@@ -60,29 +60,35 @@ class TestModelBase(unittest2.TestCase):
         from geoutils.tests.files.ingest_data_01 import DATA
         self._ds.ingest(DATA)
 
+        table = self._image_spatial_index_table_name
+
         # Direct geohash match.
         regexs = ['.*tvu7whrjnc16.*']
-        received = self._base.regex_query(self._image_spatial_index_table_name,
-                                          regexs=regexs)
-        expected = ['i_3001a']
+        # Accumulo timestamp will mess with results.  Just get the row.
+        results = self._base.regex_query(table, regexs=regexs)
+        received = []
+        for result in results:
+            received.append(result.row)
+        expected = ['0000_tvu7whrjnc16_09222521218464775807']
         msg = 'RegEx query returned error'
-        self.assertListEqual(received, expected, msg)
+        self.assertListEqual(list(received), expected, msg)
 
         # Reduced geohash precision search.
         regexs = ['.*tvu7whrjnc1.*']
-        received = self._base.regex_query(self._image_spatial_index_table_name,
-                                          regexs=regexs)
-        expected = ['i_3001a']
+        results = self._base.regex_query(table, regexs=regexs)
+        received = []
+        for result in results:
+            received.append(result.row)
+        expected = ['0000_tvu7whrjnc16_09222521218464775807']
         msg = 'RegEx query (reduced resolution) error'
         self.assertListEqual(received, expected, msg)
 
         # Missing geohash search.
         regexs = ['.*banana.*']
-        received = self._base.regex_query(self._image_spatial_index_table_name,
-                                          regexs=regexs)
+        received = self._base.regex_query(table, regexs=regexs)
         expected = []
         msg = 'RegEx query (missing geohash) error'
-        self.assertListEqual(received, expected, msg)
+        self.assertListEqual(list(received), expected, msg)
 
         # Clean up.
         self._ds.delete_table(self._image_spatial_index_table_name)
@@ -97,11 +103,15 @@ class TestModelBase(unittest2.TestCase):
         from geoutils.tests.files.ingest_data_01 import DATA
         self._ds.ingest(DATA)
 
+        table = self._image_spatial_index_table_name
+
         # Direct geohash match.
         regex = '.*tvu7whrjnc16.*'
-        received = self._base.regex_query(self._image_spatial_index_table_name,
-                                          regexs=regex)
-        expected = ['i_3001a']
+        results = self._base.regex_query(table, regexs=regex)
+        received = []
+        for result in results:
+            received.append(result.row)
+        expected = ['0000_tvu7whrjnc16_09222521218464775807']
         msg = 'RegEx query (string based) returned error'
         self.assertListEqual(received, expected, msg)
 

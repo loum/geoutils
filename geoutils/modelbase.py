@@ -114,7 +114,7 @@ class ModelBase(object):
 
         return results
 
-    def regex_query(self, table, regexs):
+    def regex_query(self, table, regexs, cols=None):
         """A simple implementation of an Accumulo regular expression
         filter iterator.
 
@@ -140,9 +140,8 @@ class ModelBase(object):
 
         iterators = [pyaccumulo.iterators.RegExFilter(row_regex=regexs[0])]
 
-        results = []
-        for record in self.connection.batch_scan(table=table,
-                                                 iterators=iterators):
-            results.append(record.cq)
+        results = self.connection.batch_scan(table=table,
+                                             iterators=iterators,
+                                             cols=cols)
 
         return results

@@ -22,7 +22,7 @@ class TestAuditer(unittest2.TestCase):
         self.assertIsInstance(self._auditer, geoutils.Auditer, msg)
 
     def test_shared_state_via_object(self):
-        """Check the shared data state.
+        """Check the shared data state: via object.
         """
         obj_1 = geoutils.Auditer()
         obj_2 = geoutils.Auditer()
@@ -43,17 +43,17 @@ class TestAuditer(unittest2.TestCase):
         obj_1.reset()
 
         received = obj_1()
-        expected = {'row_id': None}
+        expected = {}
         msg = 'Shared data (object) state error: after reset'
         self.assertDictEqual(received, expected, msg)
 
     def test_shared_state_via_global(self):
-        """Check the shared data state.
+        """Check the shared data state: via global.
         """
         audit.data = {'name_1': 'value_1'}
         audit.data = {'name_2': 'value_2'}
 
-        received = audit.data
+        received = audit()
         expected = {'tables': {
                         'audit': {
                             'cf': {
@@ -66,7 +66,7 @@ class TestAuditer(unittest2.TestCase):
         audit.reset()
 
         received = audit()
-        expected = {'row_id': None}
+        expected = {}
         msg = 'Shared data (global) state error: after reset'
         self.assertDictEqual(received, expected, msg)
 

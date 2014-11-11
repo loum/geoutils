@@ -6,7 +6,8 @@ Borg monostate idiom -- only one instance of the class is ever created.
 __all__ = ['Auditer',
            'audit']
 
-import geoutils.index
+import os
+
 from geosutils.log import log
 
 
@@ -15,7 +16,6 @@ class Auditer(object):
 
     """
     _state = {}
-    _state['data'] = {}
 
     _source_id = None
     _table_name = 'audit'
@@ -26,7 +26,7 @@ class Auditer(object):
 
         return obj
 
-    def __init__(self, source_id=None):
+    def __init__(self, pid=None):
         """:class:`geoutils.Auditer` initialisation.
 
         We use the schema construct that is consistent with
@@ -34,17 +34,34 @@ class Auditer(object):
         invocations, we only need to initialise the data structure once.
 
         """
-        if self.data.get('tables') is None:
-            self._state['data']['tables'] = {}
-            self._state['data']['tables'][self.table_name] = {}
-            self._state['data']['tables'][self.table_name]['cf'] = {}
-            self._state['data']['tables'][self.table_name]['cf']['cq'] = {}
+        if pid is None:
+            pid = os.getpid()
+
+        if self._state.get(pid) is None:
+            log.debug('Setting audit state against PID: %d' % pid)
+            self._state[pid] = {}
+            self._state[pid]['tables'] = {}
+            self._state[pid]['tables'][self.table_name] = {}
+            self._state[pid]['tables'][self.table_name]['cf'] = {}
+            self._state[pid]['tables'][self.table_name]['cf']['cq'] = {}
+        else:
+            log.debug('Audit state PID %d exists' % pid)
 
     def __call__(self):
-        self._state['data']['row_id'] = self.source_id
-        log.debug('Audit call: %s' % self._state['data'])
+        pid = os.getpid()
 
-        return self._state['data']
+        state = {}
+
+        try:
+            if self.source_id is not None:
+                self._state[pid]['row_id'] = self.source_id
+            state = self._state[pid]
+            log.debug('Audit call against PID %d: %s' %
+                      (pid, self._state[pid]))
+        except KeyError as error:
+            log.error('PID state not defined: %s' % error)
+
+        return state
 
     @property
     def source_id(self):
@@ -56,14 +73,26 @@ class Auditer(object):
 
     @property
     def data(self):
-        return self._state['data']
+        return self._state[os.getpid()]
 
     @data.setter
     def data(self, value):
-        data = self._state['data']['tables'][self.table_name]['cf']['cq']
+        pid = os.getpid()
+        if self._state.get(pid) is None:
+            log.debug('state PID is None')
+            self._state[pid] = {}
+            self._state[pid]['tables'] = {}
+            self._state[pid]['tables'][self.table_name] = {}
+            self._state[pid]['tables'][self.table_name]['cf'] = {}
+            self._state[pid]['tables'][self.table_name]['cf']['cq'] = {}
 
-        for name, action in value.iteritems():
-            data.update({name: action})
+        try:
+            data = self._state[pid]['tables'][self.table_name]['cf']['cq']
+
+            for name, action in value.iteritems():
+                data.update({name: action})
+        except KeyError as error:
+            log.error('Unable to set data: %s' % error)
 
     @property
     def table_name(self):
@@ -76,7 +105,8 @@ class Auditer(object):
     def reset(self):
         """Clears the current audit information.
         """
-        log.debug('Clearing audit info')
-        self._state['data'] = {}
+        pid = os.getpid()
+        log.debug('Clearing audit info for PID: %d' % pid)
+        self._state.pop(pid, None)
 
 audit = Auditer()

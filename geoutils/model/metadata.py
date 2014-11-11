@@ -59,8 +59,6 @@ class Metadata(geoutils.ModelBase):
             (less the ``.ntf`` extension) that is used in the current
             schema as the Row ID component of the row key.
 
-            *display*: write the results to STDOUT (default ``True``)
-
         **Returns:**
             the metadata component of *key* as a Python dictionary
             structure or as a JSON string if *jsonify* argument is set.
@@ -182,7 +180,7 @@ class Metadata(geoutils.ModelBase):
 
         files = {'center_point_match': []}
         for cell in results:
-            files['center_point_match'].append(cell)
+            files['center_point_match'].append(cell.cq)
 
         return files
 
