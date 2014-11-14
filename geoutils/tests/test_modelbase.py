@@ -1,10 +1,12 @@
-# pylint: disable=R0904,C0103
+# pylint: disable=R0904,C0103,W0142
 """:class:`geoutils.ModelBase` tests.
 
 """
 import unittest2
 import os
 
+from geoutils.tests.files.ingest_data_01 import DATA as DATA_01
+from geoutils.tests.files.ingest_data_02 import DATA as DATA_02
 import geoutils
 import geolib_mock
 
@@ -23,6 +25,7 @@ class TestModelBase(unittest2.TestCase):
         cls._mock = geolib_mock.MockServer(conf)
         cls._mock.start()
 
+        cls._meta_table_name = 'meta_library'
         cls._image_table_name = 'image_library'
         cls._image_spatial_index_table_name = 'image_spatial_index'
 
@@ -50,6 +53,92 @@ class TestModelBase(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._image_table_name)
 
+    def test_query_with_cols(self):
+        """Query: data exists.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        # Load sample data.  One record for now but we
+        # probably want to expand this to provide more data.
+        self._ds.ingest(DATA_01)
+
+        table = self._meta_table_name
+
+        # Dodgy family identifier.
+        cols = [['banana']]
+        received = self._base.query(table, cols=cols)
+        expected = []
+        msg = 'Base query with dodgy family column should return []'
+        self.assertListEqual(list(received), expected, msg)
+
+        # OK family, dodgy qualifier identifiers.
+        cols = [['geoxform=0', 'banana']]
+        received = self._base.query(table, cols=cols)
+        expected = []
+        msg = 'Base query with dodgy qualifier column should return []'
+        self.assertListEqual(list(received), expected, msg)
+
+        # OK family, OK qualifier identifiers.
+        cols = [['geoxform=0', '84.999999864233729']]
+        received = self._base.query(table, cols=cols)
+        expected = 1
+        msg = 'Base query with dodgy qualifier column should return []'
+        self.assertEqual(len(list(received)), expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_regex_scan(self):
+        """Scan table for key/regex value.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA_01)
+        self._ds.ingest(DATA_02)
+
+        table = self._meta_table_name
+
+        # Valid regex search.
+        kwargs = {'family': 'metadata=NITF_FTITLE',
+                  'qualifiers': ['Airfield', 'Checks an']}
+        results = self._base.regex_scan(table, **kwargs)
+        received = []
+        for result in results:
+            received.append(result.row)
+        expected = ['i_3001a']
+        msg = 'Regex scan should return row_ids'
+        self.assertListEqual(received, expected, msg)
+
+        # Missing search parameter regex search.
+        kwargs = {'family': 'metadata=NITF_FTITLE',
+                  'qualifiers': ['banana', 'Checks an']}
+        received = self._base.regex_scan(table, **kwargs)
+        expected = []
+        msg = 'Regex scan with missing term should not return row_ids'
+        self.assertListEqual(list(received), expected, msg)
+
+        # Unmatched family/qualifier identifier regex search.
+        kwargs = {'family': 'metadata=NITF_FDT',
+                  'qualifiers': ['banana', 'Checks an']}
+        received = self._base.regex_scan(table, **kwargs)
+        expected = []
+        msg = 'Unmatched family/qualifier should not return row_ids'
+        self.assertListEqual(list(received), expected, msg)
+
+        # Common family/qualifier identifier across records regex search.
+        kwargs = {'family': 'metadata=NITF_IREP',
+                  'qualifiers': ['MONO']}
+        results = self._base.regex_scan(table, **kwargs)
+        received = []
+        for result in results:
+            received.append(result.row)
+        expected = ['i_3001a', 'i_6130e']
+        msg = 'Common family/qualifier should return multiple row_ids'
+        self.assertListEqual(list(received), expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
     def test_regex_query(self):
         """RegEx query.
         """
@@ -57,8 +146,7 @@ class TestModelBase(unittest2.TestCase):
 
         # Load sample data.  One record for now but we
         # probably want to expand this to provide more data.
-        from geoutils.tests.files.ingest_data_01 import DATA
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         table = self._image_spatial_index_table_name
 
@@ -100,8 +188,7 @@ class TestModelBase(unittest2.TestCase):
 
         # Load sample data.  One record for now but we
         # probably want to expand this to provide more data.
-        from geoutils.tests.files.ingest_data_01 import DATA
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         table = self._image_spatial_index_table_name
 
@@ -115,6 +202,91 @@ class TestModelBase(unittest2.TestCase):
         msg = 'RegEx query (string based) returned error'
         self.assertListEqual(received, expected, msg)
 
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_batch_regex_scan(self):
+        """Batch scan across table for key/regex values.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA_01)
+        self._ds.ingest(DATA_02)
+
+        table = self._meta_table_name
+
+        # Valid regex search.
+        kwargs = {'metadata=NITF_FTITLE': ['Airfield', 'Checks an']}
+        received = self._base.batch_regex_scan(table, kwargs)
+        expected = ['i_3001a']
+        msg = 'Batch regex scan should return row_ids'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_batch_regex_scan_unmatched(self):
+        """Batch scan across table for key/regex values: unmatched.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA_01)
+        self._ds.ingest(DATA_02)
+
+        table = self._meta_table_name
+
+        # Unmatched qualifier identifier regex search.
+        kwargs = {'metadata=NITF_IREP': ['banana'],
+                  'metadata=NITF_FTITLE': ['Airfield', 'Checks an']}
+        received = self._base.batch_regex_scan(table, kwargs)
+        expected = []
+        msg = 'Batch regex scan should return row_ids'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_batch_regex_scan_multiple_matched(self):
+        """Batch scan across table for key/regex values: multiple matched.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA_01)
+        self._ds.ingest(DATA_02)
+
+        table = self._meta_table_name
+
+        # Unmatched qualifier identifier regex search.
+        kwargs = {'metadata=NITF_IREP': ['MONO']}
+        received = self._base.batch_regex_scan(table, kwargs)
+        expected = ['i_3001a', 'i_6130e']
+        msg = 'Batch regex scan should return multiple row_ids'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_batch_regex_scan_single_qualifier_unmatched(self):
+        """Batch scan across table for key/regex values: single unmatched.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA_01)
+        self._ds.ingest(DATA_02)
+
+        table = self._meta_table_name
+
+        # Single unmatched qualifier identifier regex search.
+        kwargs = {'metadata=NITF_IREP': ['banana'],
+                  'metadata=NITF_FTITLE': ['Airfield', 'Checks an']}
+        received = self._base.batch_regex_scan(table, kwargs)
+        expected = []
+        msg = 'Regex scan (single unmatched) should not return row_ids'
+        self.assertListEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)
@@ -122,6 +294,7 @@ class TestModelBase(unittest2.TestCase):
         cls._mock.stop()
         del cls._mock
 
+        del cls._meta_table_name
         del cls._image_table_name
         del cls._image_spatial_index_table_name
 

@@ -7,6 +7,8 @@ import os
 
 import geoutils
 import geolib_mock
+from geoutils.tests.files.ingest_data_01 import DATA as DATA_01
+from geoutils.tests.files.ingest_data_02 import DATA as DATA_02
 
 
 class TestModelMetadata(unittest2.TestCase):
@@ -28,15 +30,14 @@ class TestModelMetadata(unittest2.TestCase):
         cls._meta_table_name = 'meta_library'
         cls._image_spatial_index_table_name = 'image_spatial_index'
 
-    @classmethod
-    def setUp(cls):
-        cls._ds = geoutils.Datastore()
-        cls._meta = geoutils.model.Metadata(connection=cls._ds.connect(),
-                                            name=cls._meta_table_name)
-        cls._meta.coord_cols = [['coord=0'],
-                                ['coord=1'],
-                                ['coord=2'],
-                                ['coord=3']]
+    def setUp(self):
+        self._ds = geoutils.Datastore()
+        self._meta = geoutils.model.Metadata(connection=self._ds.connect(),
+                                             name=self._meta_table_name)
+        self._meta.coord_cols = [['coord=0'],
+                                 ['coord=1'],
+                                 ['coord=2'],
+                                 ['coord=3']]
 
     def test_init(self):
         """Initialise a :class:`geoutils.model.Metadata` object.
@@ -66,11 +67,9 @@ class TestModelMetadata(unittest2.TestCase):
     def test_query_metadata_with_data(self):
         """Attempt to query the metadata component from the datastore.
         """
-        from geoutils.tests.files.ingest_data_01 import DATA
-
         self._ds.init_table(self._meta_table_name)
 
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         received = self._meta.query_metadata(key='i_3001a')
         from geoutils.tests.results.meta_01 import META
@@ -84,11 +83,9 @@ class TestModelMetadata(unittest2.TestCase):
     def test_query_metadata_with_data_missing_row_id(self):
         """Query metadata from the datastore: missing row_id.
         """
-        from geoutils.tests.files.ingest_data_01 import DATA
-
         self._ds.init_table(self._meta_table_name)
 
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         received = self._meta.query_metadata(key='dodgy')
         from geoutils.tests.results.meta_01 import META
@@ -102,11 +99,9 @@ class TestModelMetadata(unittest2.TestCase):
     def test_query_metadata_with_data_jsonify(self):
         """Query the metadata component from the datastore: jsonify.
         """
-        from geoutils.tests.files.ingest_data_01 import DATA
-
         self._ds.init_table(self._meta_table_name)
 
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         received = self._meta.query_metadata(key='i_3001a',
                                              jsonify=True)
@@ -127,8 +122,7 @@ class TestModelMetadata(unittest2.TestCase):
         """
         self._ds.init_table(self._meta_table_name)
 
-        from geoutils.tests.files.ingest_data_01 import DATA
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         received = self._meta.query_coords(jsonify=True)
         results_file = os.path.join('geoutils',
@@ -148,8 +142,7 @@ class TestModelMetadata(unittest2.TestCase):
         """
         self._ds.init_table(self._meta_table_name)
 
-        from geoutils.tests.files.ingest_data_02 import DATA
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_02)
 
         received = self._meta.query_coords(jsonify=False)
         expected = {}
@@ -164,8 +157,7 @@ class TestModelMetadata(unittest2.TestCase):
         """
         self._ds.init_table(self._image_spatial_index_table_name)
 
-        from geoutils.tests.files.ingest_data_01 import DATA
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         point = (32.9831944444, 85.0001388889)
         received = self._meta.query_points(point)
@@ -188,8 +180,7 @@ class TestModelMetadata(unittest2.TestCase):
         """
         self._ds.init_table(self._image_spatial_index_table_name)
 
-        from geoutils.tests.files.ingest_data_01 import DATA
-        self._ds.ingest(DATA)
+        self._ds.ingest(DATA_01)
 
         point = (32.0, 84.0, 34.0, 86.0)
         received = self._meta.query_bbox_points(point)
@@ -207,6 +198,53 @@ class TestModelMetadata(unittest2.TestCase):
         # Clean up.
         self._ds.delete_table(self._meta_table_name)
 
+    def test_scan_metadata_no_data(self):
+        """Chained meta scans: no data.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        kwargs = {'metadata=NITF_IREP': ['MONO'],
+                  'metadata=NITF_FTITLE': ['Airfield', 'Checks an']}
+        received = self._meta.scan_metadata(search_terms=kwargs)
+        expected = {'metas': []}
+        msg = 'Chained meta scans should return no results'
+        self.assertDictEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def test_scan_metadata(self):
+        """Chained meta scans.
+        """
+        self._ds.init_table(self._meta_table_name)
+
+        self._ds.ingest(DATA_01)
+        self._ds.ingest(DATA_02)
+
+        # Single result.
+        kwargs = {'metadata=NITF_IREP': ['MONO'],
+                  'metadata=NITF_FTITLE': ['Airfield', 'Checks an']}
+        received = self._meta.scan_metadata(search_terms=kwargs)
+        expected = {'metas': ['i_3001a']}
+        msg = 'Chained meta scans should return single result'
+        self.assertDictEqual(received, expected, msg)
+
+        # Multiple results.
+        kwargs = {'metadata=NITF_IREP': ['MONO']}
+        received = self._meta.scan_metadata(search_terms=kwargs)
+        expected = {'metas': ['i_3001a', 'i_6130e']}
+        msg = 'Chained meta scans should return multiple results'
+        self.assertDictEqual(received, expected, msg)
+
+        # Clean up.
+        self._ds.delete_table(self._meta_table_name)
+
+    def tearDown(self):
+        self._meta = None
+        del self._meta
+        self._ds = None
+        del self._ds
+
     @classmethod
     def tearDownClass(cls):
         """Shutdown the Accumulo mock proxy server (if enabled)
@@ -215,10 +253,3 @@ class TestModelMetadata(unittest2.TestCase):
 
         del cls._meta_table_name
         del cls._image_spatial_index_table_name
-
-    @classmethod
-    def tearDown(cls):
-        cls._meta = None
-        del cls._meta
-        cls._ds = None
-        del cls._ds

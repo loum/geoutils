@@ -5,7 +5,7 @@ import os
 import glob
 import fnmatch
 import shutil
-from setuptools import setup, find_packages
+from setuptools import setup
 
 VERSION = '0.0.2'
 

@@ -1,4 +1,4 @@
-# pylint: disable=R0903,C0111,R0902
+# pylint: disable=R0903,C0111,R0902,W0142
 """The :class:`geoutils.model.Metadata` abstracts an Accumulo metadata
 table schema.
 
@@ -53,11 +53,11 @@ class Metadata(geoutils.ModelBase):
         """Query the metadata component from the datastore.
 
         **Kwargs:**
-            *jsonify*: return as a JSON string
-
             *key*: at this time, *key* relates to the NITF file name
             (less the ``.ntf`` extension) that is used in the current
             schema as the Row ID component of the row key.
+
+            *jsonify*: return as a JSON string
 
         **Returns:**
             the metadata component of *key* as a Python dictionary
@@ -212,3 +212,31 @@ class Metadata(geoutils.ModelBase):
         log.info('BBox centroid point (X, Y): %s' % str(centroid_point))
 
         return self.query_points(centroid_point, precision)
+
+    def scan_metadata(self, search_terms):
+        """Scan components of the metadata from the datastore.
+
+        Here, we a simulating a multi-value search scenario typical
+        of a web form query submission.
+
+        **Kwargs:**
+            *search_terms*: dictionary structure of key value pairs
+            that represent the family/qualifier identifiers as
+            required by the :meth:`geoutils.ModelBase.regex_scan`
+            parameter list
+
+        **Returns:**
+            list of metadata row_id's that match the scans terms.  The
+            results are wrapped around a Python dictionary structure
+            that can be fed into a JSONifying tool downstream.
+            Structure is similar to the following::
+
+                {'metas': ['i_3001a', ...]}
+
+        """
+        metas = {'metas': []}
+
+        results = self.batch_regex_scan(self.name, search_terms)
+        metas['metas'].extend(results)
+
+        return metas

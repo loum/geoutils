@@ -5,7 +5,9 @@ Accumulo models.
 """
 __all__ = ["ModelBase"]
 
+import collections
 import pyaccumulo
+import pyaccumulo.iterators
 
 from geosutils.log import log
 
@@ -51,13 +53,19 @@ class ModelBase(object):
 
             *cols*: limit the extract to the record's column family and
             qualifier identifiers.  The structure is a family/qualifier
-            combination in list format.  For example::
+            combination in a list of lists format.  For example::
 
-            >>> cols=['family', 'qualifier']
+            >>> cols=[['family', 'qualifier'], ...]
 
             or
 
-            >>> cols=['family']
+            >>> cols=[['family'], ...]
+
+            .. note::
+
+                Family and qualifier identifier values must be exact.
+                Only the cell that matches the family/qualifier identifier
+                combination will be returned
 
         **Returns:**
             Generator object that can be iterated over to display
@@ -145,3 +153,81 @@ class ModelBase(object):
                                              cols=cols)
 
         return results
+
+    def regex_scan(self, table, family, qualifiers):
+        """Scan *table* for a record with row *family* identifier
+        that matches the given list of *qualifers*.
+
+        **Args:**
+            *table*: name of the table to scan
+
+            *family*: column family identifier to scan
+
+            *qualifers*: list of column qualifer identifiers to scan
+
+        **Returns:**
+            lisf of Accumulo cells that match the search term criteria
+
+        """
+        iterators = []
+        priority = 21
+        count = 1
+        for qualifier in qualifiers:
+            kwargs = {'priority': priority,
+                      'cf_regex': family,
+                      'cq_regex': '.*%s.*' % qualifier,
+                      'match_substring': True,
+                      'name': 'regex%d' % count}
+            iterators.append(pyaccumulo.iterators.RegExFilter(**kwargs))
+            log.debug('RegExIterator kwargs: %s' % kwargs)
+            priority += 1
+            count += 1
+
+        results = self.connection.scan(table=table, iterators=iterators)
+        return results
+
+    def batch_regex_scan(self, table, search_terms):
+        """Combine the results of multiple
+        :meth:`geoutils.ModelBase.regex_scan` calls into a single
+        list construct.
+
+        .. note::
+            Given that potentially multiple scans are performed, ordering
+            cannot be guaranteed
+
+        **Args:**
+            *table*: the name of the table to search.
+
+            *search_terms*: dictionary structure of key value pairs
+            that represent the family/qualifier identifiers as
+            required by the :meth:`geoutils.ModelBase.regex_scan`
+            parameter list
+
+        **Returns:**
+            list of unique
+
+        """
+        log.info('Regex scanning table "%s" against search terms: "%s" ...' %
+                 (table, search_terms))
+
+        batch_results = []
+        for family, qualifiers in search_terms.iteritems():
+            cells = collections.OrderedDict()
+
+            results = self.regex_scan(table, family, qualifiers)
+            for result in results:
+                cells[result.row] = True
+
+            batch_results.append(set(cells.keys()))
+
+            # Provide some optimisation.  No need continuing scans if
+            # the most recent one returns no results.
+            if not cells.keys():
+                log.debug('Sub-scan returned empty set: ending scans')
+                break
+
+        intersects = set.intersection(*batch_results)
+
+        log.debug('Regex scanning result count: %d' % len(intersects))
+
+        return list(intersects)
