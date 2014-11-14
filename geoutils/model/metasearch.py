@@ -46,9 +46,6 @@ class Metasearch(geoutils.ModelBase):
         """
         terms = [term.lower() for term in search_terms if len(term) > 3]
         results = self.doc_query(self.name, terms)
-
-        metas = {'metas': []}
-        for result in results:
-            metas['metas'].append(result)
+        metas = {'metas': list(results)}
 
         return metas
