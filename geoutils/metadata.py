@@ -6,7 +6,7 @@ and an image.  This class focuses on the metadata.
 """
 __all__ = ["Metadata"]
 
-from osgeo import osr
+from osgeo import osr, gdal
 import os
 import shapely.geometry
 
@@ -181,7 +181,7 @@ class Metadata(object):
 
         """
         log.debug('Calculating corner coordinates from geotransform: %s' %
-                   str(self.geoxform))
+                  str(self.geoxform))
         extents = []
         x_points = [0, self.x_coord_size]
         y_points = [0, self.y_coord_size]
@@ -219,7 +219,7 @@ class Metadata(object):
 
         """
         log.debug('Calculating center coordinate from geotransform: %s' %
-                   str(self.geoxform))
+                  str(self.geoxform))
 
         polygon_points = ((0, 0),
                           (self.x_coord_size, 0),
@@ -308,15 +308,13 @@ class Metadata(object):
             log.error('Unsupported GEOGCS "%s": skipped re-projection' %
                       geogcs)
         else:
-            trans_coords = extents
-
-            # Stub this out until we need it.
-#        target_spatial_ref_system = spatial_ref_system.CloneGeogCS()
-#        transform = osr.CoordinateTransformation(src_srs, tgt_srs)
-#        for x_coord, y_coord in extents:
-#            x_coord, y_coord, z_coord = transform.TransformPoint(x_coord,
-#                                                                 y_coord)
-#            trans_coords.append([x_coord, y_coord])
+            target_spatial_ref_sys = spatial_ref_sys.CloneGeogCS()
+            transform = osr.CoordinateTransformation(spatial_ref_sys,
+                                                     target_spatial_ref_sys)
+            for x_coord, y_coord in extents:
+                x_coord, y_coord, z_coord = transform.TransformPoint(x_coord,
+                                                                     y_coord)
+                trans_coords.append([x_coord, y_coord])
 
         log.debug('Re-projected coords: "%s"' % trans_coords)
 

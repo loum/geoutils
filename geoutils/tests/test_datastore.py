@@ -327,6 +327,36 @@ class TestDatastore(unittest2.TestCase):
         self._ds.delete_table(self._image_table_name)
         self._ds.delete_table(self._thumb_table_name)
 
+#    def test_ingest_multiband_image(self):
+#        """Attempt to ingest from multiband (RGB) NITF file.
+#        """
+#        mb_file = '11OCT12192723-S2AS-052799693030_01_P001.NTF'
+#        ntf_file = os.path.join(os.sep, 'media', 'sf_dev', mb_file)
+#
+#        self._ds.connect()
+#        self._ds.init_table(self._meta_table_name)
+#        self._ds.init_table(self._image_spatial_index_table_name)
+#        self._ds.init_table(self._metasearch_table_name)
+#        self._ds.init_table(self._image_table_name)
+#        self._ds.init_table(self._thumb_table_name)
+#
+#        standard = geoutils.Standard(source_filename=ntf_file)
+#        standard.open()
+#        self._ds.ingest(standard(dry=True))
+#
+#        # If you want to ingest some sample data into the proxy server
+#        # and block (so that you can connect via the client) then
+#        # uncomment the following two lines.
+#        # import time
+#        # time.sleep(1000)
+#
+#        # Clean up.
+#        self._ds.delete_table(self._meta_table_name)
+#        self._ds.delete_table(self._image_spatial_index_table_name)
+#        self._ds.delete_table(self._metasearch_table_name)
+#        self._ds.delete_table(self._image_table_name)
+#        self._ds.delete_table(self._thumb_table_name)
+
     def test_delete_table_no_connection(self):
         """Delete an Accumulo table: no connection.
         """

@@ -23,9 +23,8 @@ class TestMetadata(unittest2.TestCase):
                                            'files',
                                            'i_6130e.ntf')
 
-    @classmethod
-    def setUp(cls):
-        cls._meta = geoutils.Metadata()
+    def setUp(self):
+        self._meta = geoutils.Metadata()
 
     def test_init(self):
         """Initialise a geoutils.Metadata object.
@@ -183,8 +182,8 @@ class TestMetadata(unittest2.TestCase):
     def test_reproject_coords(self):
         """Reproject a set of X-Y coordinates.
         """
-        xy_coords = [[84.999999864233729, 32.983333469099598],
-                     [84.999999864233729, 32.983055419789295],
+        xy_coords = [[84.999999864233715, 32.983333469099598],
+                     [84.999999864233715, 32.983055419789295],
                      [85.000277913544039, 32.983055419789295],
                      [85.000277913544039, 32.983333469099598]]
 
@@ -193,8 +192,8 @@ class TestMetadata(unittest2.TestCase):
         self._meta.geogcs = geogcs
 
         received = self._meta.reproject_coords(extents=xy_coords)
-        expected = [[84.999999864233729, 32.983333469099598],
-                    [84.999999864233729, 32.983055419789295],
+        expected = [[84.9999998642337, 32.983333469099598],
+                    [84.9999998642337, 32.983055419789295],
                     [85.000277913544039, 32.983055419789295],
                     [85.000277913544039, 32.983333469099598]]
         msg = 'X-Y coord re-projection error'
@@ -213,10 +212,9 @@ class TestMetadata(unittest2.TestCase):
         msg = 'X-Y coord re-projection error: missing GEOGCS'
         self.assertListEqual(received, expected, msg)
 
-    @classmethod
-    def tearDown(cls):
-        cls._meta = None
-        del cls._meta
+    def tearDown(self):
+        self._meta = None
+        del self._meta
 
     @classmethod
     def tearDownClass(cls):

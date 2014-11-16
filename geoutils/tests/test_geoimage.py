@@ -20,6 +20,9 @@ class TestGeoImage(unittest2.TestCase):
                                  'files',
                                  'i_3001a.ntf')
 
+        mb_file = 'bike-d-c-2.ntf'
+        cls._mb_file = os.path.join('geoutils', 'tests', 'files', mb_file)
+
     @classmethod
     def setUp(cls):
         cls._image = geoutils.GeoImage()
@@ -47,6 +50,37 @@ class TestGeoImage(unittest2.TestCase):
         handle = self._image.extract_image(dataset=nitf.dataset)
         received = handle()
         msg = 'Successful image extraction should not return None'
+        self.assertIsNotNone(received, msg)
+
+        nitf = None
+        del nitf
+
+    def test_extract_image_multiband(self):
+        """Extract the image from the multiband NITF file.
+        """
+        nitf = geoutils.NITF(source_filename=self._mb_file)
+        nitf.open()
+
+        handle = self._image.extract_image(dataset=nitf.dataset)
+        received = handle()
+        msg = 'Successful image extraction should not return None'
+        self.assertIsNotNone(received, msg)
+
+        nitf = None
+        del nitf
+
+    def test_extract_multiband_image(self):
+        """Extract a multiband image from the NITF file.
+        """
+        nitf = geoutils.NITF(source_filename=self._mb_file)
+        nitf.open()
+
+        received = self._image.extract_multiband_image(dataset=nitf.dataset,
+                                                       x_size=512,
+                                                       y_size=512,
+                                                       buf_x_size=300,
+                                                       buf_y_size=300)
+        msg = 'Successful multiband image extraction should not return None'
         self.assertIsNotNone(received, msg)
 
         nitf = None
@@ -93,6 +127,31 @@ class TestGeoImage(unittest2.TestCase):
         # Clean up.
         image_stream_fh.close()
 
+    def test_reconstruct_image_300x370_PNG(self):
+        """Reconstruct a 1D image stream to a 2D structure: 300x370 PNG.
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_stream.out')
+        image_stream_fh = open(image_stream_file, 'rb')
+        png_image = tempfile.NamedTemporaryFile('wb')
+        dimensions = (300, 300)
+        self._image.reconstruct_image(image_stream_fh.read,
+                                      dimensions).save(png_image, "PNG")
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'files',
+                                     'image300x300.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        received = hashlib.md5(open(png_image.name).read()).hexdigest()
+        msg = 'Original 300x300 PNG differs from reconstructed version'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        image_stream_fh.close()
+
     def test_reconstruct_image_50x50_PNG(self):
         """Reconstruct a 1D image stream to a 2D structure: 50x50 PNG.
         """
@@ -113,6 +172,31 @@ class TestGeoImage(unittest2.TestCase):
         expected = hashlib.md5(open(expected_file).read()).hexdigest()
         received = hashlib.md5(open(png_image.name).read()).hexdigest()
         msg = 'Original 50x50 PNG differs from reconstructed version'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        image_stream_fh.close()
+
+    def test_reconstruct_multiband_image_300x300_PNG(self):
+        """Reconstruct a 1D image stream to a 3D multiband: 300x300 PNG.
+        """
+        image_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_bike-d-c-2.out')
+        image_stream_fh = open(image_stream_file, 'rb')
+        png_image = tempfile.NamedTemporaryFile('wb')
+        dimensions = (300, 300, 3)
+        self._image.reconstruct_mb_image(image_stream_fh.read,
+                                         dimensions)().save(png_image, "PNG")
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'files',
+                                     'bike-d-c-2.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        received = hashlib.md5(open(png_image.name).read()).hexdigest()
+        msg = 'Original multiband PNG differs from reconstructed version'
         self.assertEqual(received, expected, msg)
 
         # Clean up.

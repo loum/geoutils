@@ -207,7 +207,6 @@ class Schema(object):
         meta = dict((re.sub('^%s' % token, '', k),
                     source_meta[k]) for k in meta_keys)
 
-
         # Strip out all short values and split on sequences of
         # alphanumeric characters.
         ok_content = {}
@@ -299,6 +298,8 @@ class Schema(object):
             log.error('Lat/long point not defined: spatial index skipped')
         else:
             (latitude, longitude) = point.split(',')
+            log.debug('Generating geohash from lat/long: %s/%s' %
+                      (str(latitude), str(longitude)))
             geohash = index.gen_geohash(float(latitude), float(longitude))
 
             timestamp = get_reverse_timestamp(source_date)
