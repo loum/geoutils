@@ -69,8 +69,7 @@ class GeoImage(object):
                 x_size = band.XSize
                 y_size = band.YSize
                 if downsample is not None:
-                    (x_size, y_size) = self.scale((band.XSize, band.YSize),
-                                                  downsample)
+                    (x_size, y_size) = downsample
 
                 log.debug('Raster count: %d' % dataset.RasterCount)
 

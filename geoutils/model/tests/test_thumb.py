@@ -84,6 +84,43 @@ class TestModelThumb(unittest2.TestCase):
         thumb_fh.close()
         self._ds.delete_table(self._thumb_table_name)
 
+    def test_query_thumb_multiband(self):
+        """Query the thumb (multiband) component from the datastore.
+        """
+        thumb_stream_file = os.path.join('geoutils',
+                                         'tests',
+                                         'files',
+                                         '300x300_bike-d-c-2.out')
+        thumb_fh = open(thumb_stream_file, 'rb')
+
+        data = {'row_id': 'bike-d-c-2'}
+        data['tables'] = {self._thumb_table_name: {
+                          'cf': {
+                              'cq': {
+                                  'x_coord_size': '300',
+                                  'y_coord_size': '300',
+                                  'irep': 'RGB'},
+                              'val': {
+                                  'thumb': thumb_fh.read}}}}
+
+        self._ds.init_table(self._thumb_table_name)
+        self._ds.ingest(data)
+
+        expected_file = os.path.join('geoutils',
+                                     'tests',
+                                     'files',
+                                     'bike-d-c-2.png')
+        expected = hashlib.md5(open(expected_file).read()).hexdigest()
+        image_png_stream = self._thumb.query_thumb(key='bike-d-c-2',
+                                                   img_format='PNG')
+        received = hashlib.md5(image_png_stream.read()).hexdigest()
+        msg = 'Ingested thumb stream differs from query result'
+        self.assertEqual(received, expected, msg)
+
+        # Clean up.
+        thumb_fh.close()
+        self._ds.delete_table(self._thumb_table_name)
+
     def test_query_thumb_png(self):
         """Attempt to query the thumb component from the datastore.
         """

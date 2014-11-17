@@ -130,6 +130,7 @@ class Schema(object):
                     image_table,
                     image_extract_ref,
                     downsample=None,
+                    image_type='MONO',
                     thumb=False):
         """Create a reference to an image extraction process that is
         associated with the image library's schema image/thumb component.
@@ -143,6 +144,10 @@ class Schema(object):
             *downsample*: an integer value that represents the
             reduced horizontal image pixel count.  The vertical
             pixel count will be scaled automatically.
+
+            *image_type*: general kind of image represented by the data.
+            This is typically taken from the NITF IREP metadata field.
+            Currently supported values are MONO (default) and RGB
 
             *thumb*: boolean flag that distinuguishes processing
             as a reduced image thumb.  Importantly, this will set the
@@ -168,8 +173,9 @@ class Schema(object):
         data = self.data['tables'][image_table]['cf'] = {}
         data['val'] = {key: image_extract_ref}
 
-        data['cq'] = {'x_coord_size': downsample,
-                      'y_coord_size': downsample}
+        data['cq'] = {'x_coord_size': str(downsample[0]),
+                      'y_coord_size': str(downsample[1]),
+                      'irep': image_type}
 
         log.info('Ingest image structure build done')
 

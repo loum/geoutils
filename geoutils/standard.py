@@ -74,10 +74,19 @@ class Standard(object):
                                                 dry)
         schema.build_meta(self.meta_model.name, self.meta, image_uri)
 
-        image_extract_ref = self.image.extract_image(self.dataset, 300)
+        band = self.dataset.GetRasterBand(1)
+        (x_size, y_size) = self.image.scale((band.XSize, band.YSize), 300)
+        image_extract_ref = self.image.extract_image(self.dataset,
+                                                     (x_size, y_size))
+
+        image_type = 'MONO'
+        if self.dataset.RasterCount == 3:
+            image_type = 'RGB'
+
         schema.build_image(self.thumb_model.name,
                            image_extract_ref,
-                           downsample='300',
+                           downsample=(x_size, y_size),
+                           image_type=image_type,
                            thumb=True)
 
         log.info('Ingest data structure build done')

@@ -6,6 +6,8 @@ import unittest2
 import os
 
 import geoutils
+from geoutils.tests.files.ingest_data_01 import DATA as SCHEMA_DATA_01
+from geoutils.tests.files.ingest_data_02 import DATA as SCHEMA_DATA_02
 
 
 class TestSchema(unittest2.TestCase):
@@ -50,8 +52,7 @@ class TestSchema(unittest2.TestCase):
         self._schema.build_meta('meta_library', self._meta)
         received = self._schema.data['tables']['meta_library']['cf']
 
-        from geoutils.tests.files.ingest_data_01 import DATA
-        expected = DATA['tables']['meta_library']['cf']
+        expected = SCHEMA_DATA_01['tables']['meta_library']['cf']
         msg = 'Metadata data structure result error'
         self.assertDictEqual(received, expected, msg)
 
@@ -70,16 +71,14 @@ class TestSchema(unittest2.TestCase):
         self._schema.build_meta('meta_library', meta)
         received = self._schema.data['tables']['meta_library']['cf']
 
-        from geoutils.tests.files.ingest_data_02 import DATA
-        expected = DATA['tables']['meta_library']['cf']
+        expected = SCHEMA_DATA_02['tables']['meta_library']['cf']
         msg = 'Metadata data structure result error'
         self.assertDictEqual(received, expected, msg)
 
     def test_build_document_map(self):
         """Build a document map.
         """
-        from geoutils.tests.files.ingest_data_01 import DATA
-        meta_dict = DATA['tables']['meta_library']['cf']['cq']
+        meta_dict = SCHEMA_DATA_01['tables']['meta_library']['cf']['cq']
 
         received = self._schema.build_document_map(meta_dict)
         expected = ['00000',
@@ -110,8 +109,7 @@ class TestSchema(unittest2.TestCase):
     def test_build_document_map_10_or_more_characters(self):
         """Build a document map: 10 or more characters.
         """
-        from geoutils.tests.files.ingest_data_01 import DATA
-        meta_dict = DATA['tables']['meta_library']['cf']['cq']
+        meta_dict = SCHEMA_DATA_01['tables']['meta_library']['cf']['cq']
 
         received = self._schema.build_document_map(meta_dict, length=9)
         expected = ['19961217102630',
@@ -124,8 +122,7 @@ class TestSchema(unittest2.TestCase):
     def test_build_document_map_alternate_token(self):
         """Build a document map: alternate_token
         """
-        from geoutils.tests.files.ingest_data_01 import DATA
-        meta_dict = DATA['tables']['meta_library']['cf']['cq']
+        meta_dict = SCHEMA_DATA_01['tables']['meta_library']['cf']['cq']
 
         received = self._schema.build_document_map(meta_dict,
                                                    token='fil')
@@ -199,6 +196,22 @@ class TestSchema(unittest2.TestCase):
         expected = '0000_tvu7whrjnc16_'
         msg = 'Spatial index (current time) structure result error'
         self.assertRegexpMatches(received, expected, msg)
+
+    def test_build_image_thumb(self):
+        """Build the metadata ingest thumb component.
+        """
+        self._schema.build_image('thumb_library',
+                                 image_extract_ref=None,
+                                 downsample=(300, 300),
+                                 thumb=True)
+        received = self._schema.data['tables']['thumb_library']['cf']
+
+        expected = {'cq': {'x_coord_size': '300',
+                           'y_coord_size': '300',
+                           'irep': 'MONO'},
+                    'val': {'thumb': None}}
+        msg = 'Metadata data structure result error'
+        self.assertDictEqual(received, expected, msg)
 
     def tearDown(self):
         self._schema = None
