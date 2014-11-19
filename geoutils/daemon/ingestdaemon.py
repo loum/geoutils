@@ -182,7 +182,9 @@ class IngestDaemon(daemoniser.Daemon):
 
             if status:
                 audit.data = {'ingest_daemon|finish': str(time.time())}
-                audit.source_id = '%s_ingest_daemon' % get_reverse_timestamp()
+                audit.data = {'ingest_daemon|row_id': data['row_id']}
+                audit.source_id = ('%s_ingest_daemon' %
+                                    get_reverse_timestamp())
                 self.accumulo.ingest(audit())
                 audit.reset()
 
