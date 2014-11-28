@@ -1,5 +1,5 @@
 # pylint: disable=R0904,C0103
-""":class:`geoutils.IngestConfig` tests.
+""":class:`geoutils.IngestDaemon` tests.
 
 """
 import unittest2

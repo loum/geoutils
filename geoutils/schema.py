@@ -270,9 +270,6 @@ class Schema(object):
         As with all the ``geoutils.Schema.build*` methods, builds and
         persists the schema data structure within the object instance.
 
-        As with all the ``geoutils.Schema.build*` methods, builds and
-        persists the schema data structure within the object instance.
-
         **Args:**
             *index_table*: the name of the spatial index table
 
@@ -319,3 +316,51 @@ class Schema(object):
             data['cf']['cq'] = {'file': self.source_id}
 
         log.info('Ingest meta spatial index structure build done')
+
+    def build_gdelt_spatial_index(self,
+                                  index_table,
+                                  gdelt):
+        """Build the GDELT spatial index schema for an Accumulo ingest.
+
+        As with all the ``geoutils.Schema.build*` methods, builds and
+        persists the schema data structure within the object instance.
+
+        **Args:**
+            *index_table*: the name of the GDELT spatial index table
+
+        """
+        log.info('Building ingest GDELT spatial index component ...')
+
+        # Initialise the table construct if missing.
+        if self.data['tables'].get(index_table) is None:
+            self.data['tables'][index_table] = {}
+
+        data = self.data['tables'][index_table]
+
+        index = geoutils.index.Spatial()
+
+        stripe_token = index.get_stripe_token(self.source_id)
+
+        log.debug('Generating geohash from lat/long: %s/%s' %
+                  (str(gdelt.latitude), str(gdelt.longitude)))
+        geohash = index.gen_geohash(float(gdelt.latitude),
+                                    float(gdelt.longitude))
+
+        timestamp = get_reverse_timestamp(gdelt.date_added.ljust(14, '0'))
+
+        # Override the row_id.
+        row_id = '%s_%s_%s' % (stripe_token, geohash, timestamp)
+
+        # Build the schema component.
+        data['row_id'] = row_id
+        data['cf'] = {'cq': {'Actor1Geo_Type': gdelt.type,
+                             'Actor1Geo_Fullname': gdelt.fullname,
+                             'Actor1Geo_CountryCode': gdelt.country_code,
+                             'Actor1Geo_ADM1Code': gdelt.adm1_code,
+                             'Actor1Geo_Lat': gdelt.latitude,
+                             'Actor1Geo_Long': gdelt.longitude,
+                             'Actor1Geo_FeatureID': gdelt.feature_id,
+                             'DATEADDED': gdelt.date_added,
+                             'SOURCEURL': gdelt.source_url}}
+
+        log.info('Ingest GDELT spatial index structure build done')

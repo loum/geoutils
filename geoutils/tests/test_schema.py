@@ -8,6 +8,7 @@ import os
 import geoutils
 from geoutils.tests.files.ingest_data_01 import DATA as SCHEMA_DATA_01
 from geoutils.tests.files.ingest_data_02 import DATA as SCHEMA_DATA_02
+from geoutils.tests.files.test_gdelt_data import DATA as GDELT_DATA
 
 
 class TestSchema(unittest2.TestCase):
@@ -15,6 +16,8 @@ class TestSchema(unittest2.TestCase):
     """
     @classmethod
     def setUpClass(cls):
+        cls.maxDiff = None
+
         cls._file = os.path.join('geoutils',
                                  'tests',
                                  'files',
@@ -211,6 +214,32 @@ class TestSchema(unittest2.TestCase):
                            'irep': 'MONO'},
                     'val': {'thumb': None}}
         msg = 'Metadata data structure result error'
+        self.assertDictEqual(received, expected, msg)
+
+    def test_build_gdelt_spatial_index_current_time(self):
+        """Build the meta spatial index ingest data structure.
+        """
+        gdelt = geoutils.Gdelt(GDELT_DATA['gdelt_001'])
+
+        self._schema.build_gdelt_spatial_index('gdelt_spatial_index',
+                                               gdelt)
+        received = self._schema.get_table('gdelt_spatial_index')
+        tmp_source_url = received['cf']['cq']['SOURCEURL']
+        received['cf']['cq']['SOURCEURL'] = tmp_source_url[:23] + '...'
+        expected = {'row_id': '0000_dqcjqbxu3u0u_09221955249654775807',
+                    'cf': {
+                        'cq': {
+                            'Actor1Geo_Type': ' ',
+                            'Actor1Geo_CountryCode': 'US',
+                            'Actor1Geo_ADM1Code': 'USDC',
+                            'Actor1Geo_FeatureID': '531871',
+                            'Actor1Geo_Fullname': 'United States',
+                            'Actor1Geo_Lat': '38.8951',
+                            'Actor1Geo_Long': '-77.0364',
+                            'DATEADDED': '20141124',
+                            'SOURCEURL': 'http://www.news.com.au/...'
+                    }}}
+        msg = 'GDELT spatial index structure result error'
         self.assertDictEqual(received, expected, msg)
 
     def tearDown(self):

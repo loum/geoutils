@@ -8,7 +8,6 @@ products and image-related products.
 __all__ = ["Standard"]
 
 import os
-import re
 from osgeo import gdal
 
 import geoutils
@@ -49,7 +48,7 @@ class Standard(object):
 
         **Returns:**
             a dictionary structure that can be fed into a
-        :class:`geoutils.Datastore` ingest
+            :class:`geoutils.Datastore` ingest
 
         .. todo::
 

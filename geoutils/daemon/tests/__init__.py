@@ -2,3 +2,4 @@
 """
 from test_ingestdaemon import TestIngestDaemon
 from test_stagerdaemon import TestStagerDaemon
+from test_gdeltdaemon import TestGdeltDaemon
