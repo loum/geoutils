@@ -49,8 +49,6 @@ class GdeltDaemon(daemoniser.Daemon):
         self.conf = conf
         self.delete = delete
 
-        # If a file is provided on the command line, we want to
-        # force a single iteration.
         if self.filename is not None:
             self.batch = True
 
@@ -62,6 +60,10 @@ class GdeltDaemon(daemoniser.Daemon):
 
         file_to_process = None
         if self.filename is not None:
+            # If a file is provided on the command line, we want to
+            # force a single iteration.
+            self.batch = True
+
             file_to_process = self.filename
             if os.path.exists(file_to_process):
                 self.process(event, file_to_process)
@@ -117,7 +119,7 @@ class GdeltDaemon(daemoniser.Daemon):
                 skip_sleep = True
 
                 if (self.ingest(file_to_process, dry=self.dry) and
-                    self.delete and not self.dry):
+                   self.delete and not self.dry):
                     log.info('Deleting file: %s' %
                              file_to_process + '.proc')
                     try:
@@ -172,29 +174,28 @@ class GdeltDaemon(daemoniser.Daemon):
         if move_file(filename, proc_file):
             gdelt_zip = zipfile.ZipFile(proc_file, 'r')
             for zip_filename in gdelt_zip.namelist():
-                log.debug ('Processing GDELT file "%s"' % zip_filename)
-                audit.data = {'gdelt_daemon|start': str(time.time())}
+                log.debug('Processing GDELT file "%s"' % zip_filename)
 
                 file_h = gdelt_zip.open(zip_filename, 'r')
                 for line in file_h:
-                    event_data = line.strip()
+                    audit.data = {'gdelt_daemon|start': str(time.time())}
+                    gdelt = geoutils.Gdelt(line.strip())
+                    gdelt_schema = gdelt()
+                    log.debug('GDELT schema: %s' % gdelt_schema)
+                    gdelt_row_id = gdelt_schema['row_id']
 
-                    # Only interested in the EVENT GEOGRAPHY
-                    event_data = event_data.split(',')
-                    if len(event_data) > 4:
-                        data = geoutils.Gdelt(event_data[4])
-                        log.debug('GDELT: %s' % data.latitude)
-                    else:
-                        continue
-
-                    status = self.accumulo.ingest(data, dry=dry)
-
-                    audit.data = {'gdelt_daemon|finish': str(time.time())}
-                    audit.data = {'gdelt_daemon|row_id': data['row_id']}
-                    audit.source_id = ('%s_gdelt_daemon' %
-                                        get_reverse_timestamp())
-                    self.accumulo.ingest(audit())
+                    status = self.accumulo.ingest(gdelt_schema, dry=dry)
+                    if status:
+                        audit.data = {'gdelt_daemon|finish': str(time.time())}
+                        audit.data = {'gdelt_daemon|row_id': gdelt_row_id}
+                        audit.source_id = ('%s_gdelt_daemon' %
+                                           get_reverse_timestamp())
+                        self.accumulo.ingest(audit(), dry=dry)
                     audit.reset()
+
+                    # Only perform a single iteration in dry mode.
+                    if dry:
+                        break
 
             # In dry mode we need to restore the file.
             if dry:
@@ -215,7 +216,7 @@ class GdeltDaemon(daemoniser.Daemon):
         file_to_process = None
 
         log.debug('Sourcing files at: %s' % self.conf.inbound_dir)
-        gdelt_filter = '.*\.export.CSV.zip'
+        gdelt_filter = '.*\.export.CSV.zip$'
         for file_match in get_directory_files(self.conf.inbound_dir,
                                               file_filter=gdelt_filter):
             file_to_process = file_match

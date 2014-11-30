@@ -156,16 +156,21 @@ class TestSchema(unittest2.TestCase):
         self._schema.shard_id = shard_id
         self._schema.build_metasearch(token_set)
         received = self._schema.data['tables']['meta_search']
-        expected = {'row_id': 's01',
-                    'cf': {
-                        'cq': {
-                            'geocentric': row_id,
-                            'huachuca': row_id,
-                            'i_3001a': row_id,
-                            'image': row_id,
-                            'jitc': row_id},
-                        'val': {
-                             'e': shard_id}}}
+        expected = {
+            'row_id': 's01',
+            'cf': {
+                'cq': {
+                    'geocentric': row_id,
+                    'huachuca': row_id,
+                    'i_3001a': row_id,
+                    'image': row_id,
+                    'jitc': row_id,
+                },
+                'val': {
+                    'e': shard_id,
+                },
+            },
+        }
         msg = 'Meta search structure result error'
         self.assertDictEqual(received, expected, msg)
 
@@ -179,9 +184,14 @@ class TestSchema(unittest2.TestCase):
                   'source_date': '19961217102630'}
         self._schema.build_spatial_index(**kwargs)
         received = self._schema.get_table('image_spatial_index')
-        expected = {'row_id': '0000_tvu7whrjnc16_09222521218464775807',
-                    'cf': {
-                        'cq': {'file': 'i_3001a'}}}
+        expected = {
+            'row_id': '0000_tvu7whrjnc16_09222521218464775807',
+            'cf': {
+                'cq': {
+                    'file': 'i_3001a',
+                },
+            },
+        }
         msg = 'Image spatial index structure result error'
         self.assertDictEqual(received, expected, msg)
 
@@ -226,19 +236,23 @@ class TestSchema(unittest2.TestCase):
         received = self._schema.get_table('gdelt_spatial_index')
         tmp_source_url = received['cf']['cq']['SOURCEURL']
         received['cf']['cq']['SOURCEURL'] = tmp_source_url[:23] + '...'
-        expected = {'row_id': '0000_dqcjqbxu3u0u_09221955249654775807',
-                    'cf': {
-                        'cq': {
-                            'Actor1Geo_Type': ' ',
-                            'Actor1Geo_CountryCode': 'US',
-                            'Actor1Geo_ADM1Code': 'USDC',
-                            'Actor1Geo_FeatureID': '531871',
-                            'Actor1Geo_Fullname': 'United States',
-                            'Actor1Geo_Lat': '38.8951',
-                            'Actor1Geo_Long': '-77.0364',
-                            'DATEADDED': '20141124',
-                            'SOURCEURL': 'http://www.news.com.au/...'
-                    }}}
+        expected = {
+            'cf': {
+                'cq': {
+                    'GlobalEventID': '324845984',
+                    'Day': '20041126',
+                    'Actor1Geo_Type': '3',
+                    'Actor1Geo_CountryCode': 'US',
+                    'Actor1Geo_ADM1Code': 'USDC',
+                    'Actor1Geo_FeatureID': '531871',
+                    'Actor1Geo_Fullname': 'Washington, District of Columbia, United States',
+                    'Actor1Geo_Lat': '38.8951',
+                    'Actor1Geo_Long': '-77.0364',
+                    'DATEADDED': '20141124',
+                    'SOURCEURL': 'http://www.news.com.au/...'
+                }
+            }
+        }
         msg = 'GDELT spatial index structure result error'
         self.assertDictEqual(received, expected, msg)
 

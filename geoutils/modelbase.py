@@ -186,6 +186,33 @@ class ModelBase(object):
         results = self.connection.scan(table=table, iterators=iterators)
         return results
 
+    def regex_row_scan(self, table, qualifiers):
+        """Scan *table* for a record with row *family* identifier
+        that matches the given list of *qualifers*.
+
+        **Args:**
+            *table*: name of the table to scan
+
+            *qualifers*: list of row column qualifer identifiers to scan
+
+        **Returns:**
+            lisf of Accumulo cells that match the search term criteria
+
+        """
+        results = []
+        for qualifier in qualifiers:
+            iterators = []
+            kwargs = {'row_regex': '.*%s.*' % qualifier,
+                      'match_substring': True,
+                      'name': 'regex_row_scan'}
+            iterators.append(pyaccumulo.iterators.RegExFilter(**kwargs))
+            log.debug('RegExIterator kwargs: %s' % kwargs)
+
+            results.extend(self.connection.scan(table=table,
+                                                iterators=iterators))
+
+        return results
+
     def batch_regex_scan(self, table, search_terms):
         """Combine the results of multiple
         :meth:`geoutils.ModelBase.regex_scan` calls into a single

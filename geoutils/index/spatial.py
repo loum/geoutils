@@ -47,7 +47,24 @@ class Spatial(object):
             the geohash value
 
         """
-        return geohash.encode(latitude, longitude, precision=precision)
+        hash = None
+
+        if latitude is not None and longitude is not None:
+            if ((isinstance(latitude, str) and len(latitude)) and
+               (isinstance(longitude, str) and len(longitude))):
+                latitude = float(latitude)
+                longitude = float(longitude)
+
+            if (isinstance(latitude, float) and
+               isinstance(longitude, float)):
+                hash = geohash.encode(latitude,
+                                      longitude,
+                                      precision=precision)
+
+        log.info('Geohash for lat/long "%s/%s" produced "%s"' %
+                 (latitude, longitude, hash))
+
+        return hash
 
     def get_stripe_token(self, source):
         code = hashcode(source)

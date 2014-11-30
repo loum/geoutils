@@ -46,6 +46,58 @@ class TestSpatial(unittest2.TestCase):
         msg = 'Base32 geohash string error'
         self.assertEqual(received, expected, msg)
 
+    def test_gen_geohash_not_float(self):
+        """Generate a base32 geohash string: not float.
+        """
+        latitude = '42.6'
+        longitude = '-5.6'
+        received = self._spatial.gen_geohash(latitude, longitude)
+        expected = 'ezs42e44yx96'
+        msg = 'Base32 geohash string error: not float'
+        self.assertEqual(received, expected, msg)
+
+    def test_gen_geohash_none_points(self):
+        """Generate a base32 geohash string: None points.
+        """
+        latitude = None
+        longitude = -5.6
+        received = self._spatial.gen_geohash(latitude, longitude)
+        msg = 'Base32 geohash string error: None latitude'
+        self.assertIsNone(received, msg)
+
+        latitude = 42.6
+        longitude = None
+        received = self._spatial.gen_geohash(latitude, longitude)
+        msg = 'Base32 geohash string error: None longitude'
+        self.assertIsNone(received, msg)
+
+        latitude = None
+        longitude = None
+        received = self._spatial.gen_geohash(latitude, longitude)
+        msg = 'Base32 geohash string error: None latitude/longitude'
+        self.assertIsNone(received, msg)
+
+    def test_gen_geohash_empty_points(self):
+        """Generate a base32 geohash string: empty points.
+        """
+        latitude = ''
+        longitude = -5.6
+        received = self._spatial.gen_geohash(latitude, longitude)
+        msg = 'Base32 geohash string error: None latitude'
+        self.assertIsNone(received, msg)
+
+        latitude = 42.6
+        longitude = ''
+        received = self._spatial.gen_geohash(latitude, longitude)
+        msg = 'Base32 geohash string error: None longitude'
+        self.assertIsNone(received, msg)
+
+        latitude = ''
+        longitude = ''
+        received = self._spatial.gen_geohash(latitude, longitude)
+        msg = 'Base32 geohash string error: None latitude/longitude'
+        self.assertIsNone(received, msg)
+
     def test_get_stripe_token(self):
         """Generate a stripe_token.
         """

@@ -1,0 +1,62 @@
+#!/usr/bin/python
+"""Load GDELT files into the Accumulo datastore.
+
+"""
+
+import os
+import inspect
+import sys
+
+import daemoniser
+import geoutils
+
+CONF = os.path.join(os.sep, 'etc', 'geoutils', 'conf', 'geoutils.conf')
+
+
+def main():
+    """Script entry point.
+
+    """
+    service = daemoniser.Service()
+    service.parser.add_option('-f', '--file',
+                              dest='file',
+                              help='file to process inline (start only)')
+    service.parser.add_option('-r', '--remove',
+                              dest='remove',
+                              action='store_true',
+                              help='delete file after processing')
+    script_name = os.path.basename(inspect.getfile(inspect.currentframe()))
+    service.check_args(script_name)
+
+    # Check if a filename was provided on the command line.
+    command_line_file = None
+    if service.options.file:
+        command_line_file = service.options.file
+
+    remove_file = False
+    if service.options.remove:
+        remove_file = service.options.remove
+
+    config_file = service.options.config
+    if config_file is None:
+        if os.path.exists(CONF):
+            config_file = CONF
+
+    if config_file is None:
+        sys.exit('Unable to source the geoutils.conf')
+    else:
+        conf = geoutils.GdeltConfig(config_file)
+        conf.parse_config()
+
+    # OK, start processing.
+    gdeltd = geoutils.GdeltDaemon(pidfile=service.pidfile,
+                                  filename=command_line_file,
+                                  dry=service.dry,
+                                  batch=service.batch,
+                                  conf=conf,
+                                  delete=remove_file)
+
+    service.launch_command(gdeltd, script_name)
+
+if __name__ == '__main__':
+    main()

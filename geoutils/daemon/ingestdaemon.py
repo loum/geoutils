@@ -116,7 +116,7 @@ class IngestDaemon(daemoniser.Daemon):
                 skip_sleep = True
 
                 if (self.ingest(file_to_process, dry=self.dry) and
-                    self.delete and not self.dry):
+                   self.delete and not self.dry):
                     log.info('Deleting file: %s' %
                              file_to_process + '.proc')
                     try:
@@ -184,9 +184,9 @@ class IngestDaemon(daemoniser.Daemon):
                 audit.data = {'ingest_daemon|finish': str(time.time())}
                 audit.data = {'ingest_daemon|row_id': data['row_id']}
                 audit.source_id = ('%s_ingest_daemon' %
-                                    get_reverse_timestamp())
-                self.accumulo.ingest(audit())
-                audit.reset()
+                                   get_reverse_timestamp())
+                self.accumulo.ingest(audit(), dry=dry)
+            audit.reset()
 
             # In dry mode we need to restore the file.
             if dry:

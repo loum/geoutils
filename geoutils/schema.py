@@ -121,8 +121,8 @@ class Schema(object):
         point = data.get('cq').get('center')
         image_date = data.get('cq').get('metadata=NITF_IDATIM')
         self.build_spatial_index('image_spatial_index',
-                                  point,
-                                  image_date)
+                                 point,
+                                 image_date)
 
         log.info('Ingest metadata structure build done')
 
@@ -325,8 +325,15 @@ class Schema(object):
         As with all the ``geoutils.Schema.build*` methods, builds and
         persists the schema data structure within the object instance.
 
+        .. note::
+
+            A valid geohash is required to generate the appropriate
+            ingest ``row_id``.  Otherwise, the schema build is skipped.
+
         **Args:**
             *index_table*: the name of the GDELT spatial index table
+
+            *gdelt*: the GDELT ingest schema dictionary structure
 
         """
         log.info('Building ingest GDELT spatial index component ...')
@@ -343,24 +350,34 @@ class Schema(object):
 
         log.debug('Generating geohash from lat/long: %s/%s' %
                   (str(gdelt.latitude), str(gdelt.longitude)))
-        geohash = index.gen_geohash(float(gdelt.latitude),
-                                    float(gdelt.longitude))
+        geohash = index.gen_geohash(gdelt.latitude, gdelt.longitude)
 
-        timestamp = get_reverse_timestamp(gdelt.date_added.ljust(14, '0'))
+        if gdelt.date_added is not None:
+            timestamp = get_reverse_timestamp(gdelt.date_added.ljust(14, '0'))
 
         # Override the row_id.
-        row_id = '%s_%s_%s' % (stripe_token, geohash, timestamp)
+        if geohash is not None:
+            self.source_id = ('%s_%s_%s_%s' % (stripe_token,
+                                               geohash,
+                                               timestamp,
+                                               gdelt.event_id))
 
-        # Build the schema component.
-        data['row_id'] = row_id
-        data['cf'] = {'cq': {'Actor1Geo_Type': gdelt.type,
-                             'Actor1Geo_Fullname': gdelt.fullname,
-                             'Actor1Geo_CountryCode': gdelt.country_code,
-                             'Actor1Geo_ADM1Code': gdelt.adm1_code,
-                             'Actor1Geo_Lat': gdelt.latitude,
-                             'Actor1Geo_Long': gdelt.longitude,
-                             'Actor1Geo_FeatureID': gdelt.feature_id,
-                             'DATEADDED': gdelt.date_added,
-                             'SOURCEURL': gdelt.source_url}}
+            data['cf'] = {
+                'cq': {
+                    'GlobalEventID': gdelt.event_id,
+                    'Day': gdelt.event_day,
+                    'Actor1Geo_Type': gdelt.type,
+                    'Actor1Geo_Fullname': gdelt.fullname,
+                    'Actor1Geo_CountryCode': gdelt.country_code,
+                    'Actor1Geo_ADM1Code': gdelt.adm1_code,
+                    'Actor1Geo_Lat': gdelt.latitude,
+                    'Actor1Geo_Long': gdelt.longitude,
+                    'Actor1Geo_FeatureID': gdelt.feature_id,
+                    'DATEADDED': gdelt.date_added,
+                    'SOURCEURL': gdelt.source_url
+                }
+            }
+        else:
+            log.error('')
 
         log.info('Ingest GDELT spatial index structure build done')

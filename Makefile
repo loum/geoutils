@@ -36,6 +36,7 @@ TEST=geoutils.tests:TestStandard \
 	geoutils.config.tests:TestGdeltConfig \
 	geoutils.daemon.tests:TestIngestDaemon \
 	geoutils.daemon.tests:TestStagerDaemon \
+	geoutils.daemon.tests:TestGdeltDaemon \
 	geoutils.tests:TestGdelt
 
 sdist:

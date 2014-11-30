@@ -20,6 +20,8 @@ class Gdelt(object):
         Source file name that is undergoing processing
 
     """
+    _event_id = None
+    _event_day = None
     _type = None
     _fullname = None
     _country_code = None
@@ -52,6 +54,22 @@ class Gdelt(object):
         schema.build_gdelt_spatial_index('gdelt_spatial_index', self)
 
         return schema()
+
+    @property
+    def event_id(self):
+        return self._event_id
+
+    @event_id.setter
+    def event_id(self, value):
+        self._event_id = value
+
+    @property
+    def event_day(self):
+        return self._event_day
+
+    @event_day.setter
+    def event_day(self, value):
+        self._event_day = value
 
     @property
     def type(self):
@@ -128,6 +146,9 @@ class Gdelt(object):
     def extract_gdelt(self, data):
         """Attempts to extract the GDELT data from the based on *data*
 
+        Only interested in the EVENTID AND DATE ATTRIBUTES (column 1) and
+        DATA MANAGEMENT FIELDS (index 5) columns
+
         **Args:**
             *dataset*: a :class:`gdal.Dataset` object generally
             obtained via a :func:`gdal.Open` operation
@@ -137,18 +158,23 @@ class Gdelt(object):
              Boolean ``False`` otherwise
 
         """
-        log.debug('Received: %s' % data)
+        event_columns = data.split('\t')
 
-        tmp_data = data.split('\t')
+        event_id = event_columns[0]
+        event_day = event_columns[1]
+        log.debug('Processing GlobalEventID|Day: "%s|%s"' %
+                  (event_id, event_day))
+        self.event_id = event_id
+        self.event_day = event_day
 
-        self.type = tmp_data[0][0]
-        self.fullname = tmp_data[0][1:]
-        self.country_code = tmp_data[1]
-        self.adm1_code = tmp_data[2]
-        self.latitude = tmp_data[3]
-        self.longitude = tmp_data[4]
-        self.feature_id = tmp_data[5]
-        self.date_added = tmp_data[6]
+        self.type = event_columns[49]
+        self.fullname = event_columns[50]
+        self.country_code = event_columns[51]
+        self.adm1_code = event_columns[52]
+        self.latitude = event_columns[53]
+        self.longitude = event_columns[54]
+        self.feature_id = event_columns[55]
+        self.date_added = event_columns[56]
 
-        if len(tmp_data) > 7:
-            self.source_url = tmp_data[7]
+        if len(event_columns) == 58:
+                self.source_url = event_columns[57]
