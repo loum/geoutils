@@ -16,7 +16,7 @@ class Gdelt(geoutils.ModelBase):
     """:class:`geoutils.model.Gdelt` Accumulo datastore model.
 
     """
-    _gdelt_table_name = 'gdelt_spatial_index'
+    _name = 'gdelt_spatial_index'
 
     def __init__(self, connection, name=None):
         """:class:`geoutils.model.Gdelt` initialisation.
@@ -26,14 +26,6 @@ class Gdelt(geoutils.ModelBase):
 
         """
         super(Gdelt, self).__init__(connection, name)
-
-    @property
-    def gdelt_table_name(self):
-        return self._gdelt_table_name
-
-    @gdelt_table_name.setter
-    def gdelt_table_name(self, value):
-        self._gdelt_table_name = value
 
     def query_gdelt(self, key=None):
         """Query the GDELT component from the datastore.
@@ -103,39 +95,10 @@ class Gdelt(geoutils.ModelBase):
             log.debug('Point "%s" geohash is: "%s"' % (point, hashcode))
             hashcodes.append(hashcode)
 
-        results = self.regex_row_scan(self.gdelt_table_name, hashcodes)
+        results = self.regex_row_scan(self.name, hashcodes)
 
         for cell in results:
             if cell.row not in gdelts['center_point_match']:
                 gdelts['center_point_match'].append(cell.row)
 
         return gdelts
-
-    def query_bbox_points(self, bbox, precision=4):
-        """Scan the metadata spatial index table that match a given
-        *bbox* boundary box range.
-
-        A precision of 4 equates to a geohash grid size of around 500KM.
-
-        **Args:**
-            *bbox*: iterable object (list or tuple) representing
-            the left (longitude), bottom (latitude), right (longitude)
-            and top (latitude) of the bounding box.
-
-            *precision*: geohash grid size.  The precision in the
-            Accumulo spatial index is 12 (less than 1 meter grid)
-            so the value needs to be 12 or less.  Defaults to 5
-
-        **Returns:**
-            Dictionary structure representing all matching points
-            contained with the search grid.  For of dictionary
-            structure is::
-
-                {'center_point_match': ['i_3001a', ...]}
-
-        """
-        box = shapely.geometry.box(*bbox)
-        centroid_point = (box.centroid.x, box.centroid.y)
-        log.info('BBox centroid point (X, Y): %s' % str(centroid_point))
-
-        return self.query_points(centroid_point, precision)

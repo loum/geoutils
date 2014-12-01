@@ -60,6 +60,7 @@ class Datastore(object):
     _image = geoutils.model.Image(None)
     _thumb = geoutils.model.Thumb(None)
     _audit = geoutils.model.Audit(None)
+    _gdelt = geoutils.model.Gdelt(None)
 
     @property
     def connection(self):
@@ -121,6 +122,10 @@ class Datastore(object):
     def audit(self):
         return self._audit
 
+    @property
+    def gdelt(self):
+        return self._gdelt
+
     def __del__(self):
         self.close()
 
@@ -162,6 +167,7 @@ class Datastore(object):
             self.image.connection = self.connection
             self.thumb.connection = self.connection
             self.audit.connection = self.connection
+            self.gdelt.connection = self.connection
         except (TTransportException,
                 AccumuloSecurityException) as err:
             log.error('Connection error: "%s"' % err)

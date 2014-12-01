@@ -8,8 +8,6 @@ import tempfile
 
 import geoutils
 import geolib_mock
-from geoutils.tests.files.ingest_data_01 import DATA as DATA_01
-from geoutils.tests.files.ingest_data_02 import DATA as DATA_02
 from geoutils.model.tests.results.gdelt_01 import GDELT_MODEL
 from geosutils.files import (copy_file,
                              remove_files)
@@ -102,6 +100,11 @@ class TestModelGdelt(unittest2.TestCase):
         expected = {}
         msg = 'Scan across GDELT table against dodgy row_id error'
         self.assertDictEqual(received, expected, msg)
+
+        # Uncomment the sleep statement to block and query some
+        # sample data.
+        # import time
+        # time.sleep(1000)
 
         # Clean up.
         self._gdeltd.exit_event.clear()
